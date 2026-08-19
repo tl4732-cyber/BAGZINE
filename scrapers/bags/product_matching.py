@@ -28,21 +28,23 @@ def get_or_create_variant(session, parsed: ParsedProduct) -> ProductVariant:
     brand = get_or_create_brand(session, parsed.brand)
     model = get_or_create_model(session, brand.id, parsed.model)
 
-    variant = session.execute(
+    variants = session.execute(
         select(ProductVariant).where(
             ProductVariant.model_id == model.id,
             ProductVariant.size == parsed.size,
             ProductVariant.color == parsed.color,
             ProductVariant.leather == parsed.leather,
         )
-    ).scalar_one_or_none()
-    if variant is None:
-        variant = ProductVariant(
-            model_id=model.id,
-            size=parsed.size,
-            color=parsed.color,
-            leather=parsed.leather,
-        )
-        session.add(variant)
-        session.flush()
+    ).scalars().all()
+    if variants:
+        return variants[0]
+
+    variant = ProductVariant(
+        model_id=model.id,
+        size=parsed.size,
+        color=parsed.color,
+        leather=parsed.leather,
+    )
+    session.add(variant)
+    session.flush()
     return variant

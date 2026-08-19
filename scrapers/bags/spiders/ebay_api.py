@@ -145,6 +145,11 @@ class EbayApiSpider(scrapy.Spider):
         item["price_amount"] = float(price_block.get("value", 0))
         item["currency"] = price_block.get("currency", "USD")
         item["condition_raw"] = summary.get("condition")
+        item["attributes_raw"] = {
+            str(aspect.get("name")): aspect.get("value")
+            for aspect in (summary.get("localizedAspects") or [])
+            if aspect.get("name") and aspect.get("value") is not None
+        }
         return item
 
     def _mock_items(self): 

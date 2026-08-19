@@ -3,9 +3,26 @@ __pycache__/
 *.py[cod]
 .scrapy/
 *.log
+web/node_modules/
+web/dist/
 .env
 out.json
 ebay_sample.json
 out_sandbox_demo.json
 postgres_data/
 *.pages
+
+# Terraform (.terraform.lock.hcl is intentionally NOT ignored -- commit it)
+infra/terraform/.terraform/
+infra/terraform/*.tfstate
+infra/terraform/*.tfstate.*
+infra/terraform/terraform.tfvars
+infra/terraform/*.tfplan
+
+# AWS pipeline local state
+logs/s3_loaded_keys.json
+
+# Local Spark job output/staging + a locally-downloaded JDK (dev convenience only)
+data/silver/
+data/bronze_staging/
+.jdk_tmp/

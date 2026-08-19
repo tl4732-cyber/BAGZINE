@@ -1,0 +1,13 @@
+# Slim dependency set for the AWS Lambda scraper image (Dockerfile.lambda).
+# No scrapy-playwright/playwright here on purpose: the Lambda profile only
+# runs ebay_api and fashionphile (plain HTTP spiders), so browser binaries
+# would just bloat the image. sqlalchemy/psycopg2 are still required because
+# bags/pipelines.py imports db.session/db.models at module import time, even
+# though the DB-writing pipelines are disabled in bags/settings_lambda.py.
+scrapy>=2.11,<3
+itemadapter>=0.8
+pydantic>=2.5,<3
+python-dotenv>=1.0
+sqlalchemy>=2.0,<3
+psycopg2-binary>=2.9
+boto3>=1.34

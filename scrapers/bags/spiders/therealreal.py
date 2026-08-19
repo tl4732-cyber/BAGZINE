@@ -1,14 +1,15 @@
 """
 Step 5: The RealReal handbag listings spider (scrapy-playwright).
 
-Pilot: Chanel and Hermès women handbags.
+NOT VIABLE FOR LIVE SCRAPING: The RealReal serves a PerimeterX behavioral
+CAPTCHA ("Press & Hold") to every request — plain HTTP and headless Chromium
+alike — regardless of request rate. This is deliberate anti-bot protection,
+not a bug, and defeating it would mean circumventing their Terms of Service.
+Kept only for offline/mock testing; see spiders/fashionphile.py for a real,
+ToS-compliant marketplace source (public Shopify JSON API, no bot challenge).
 
-Offline test (no browser):
+Offline test (no browser, no network):
   scrapy crawl therealreal -a use_mock=1 -o out.json
-
-Live scrape (requires playwright install chromium):
-  playwright install chromium
-  scrapy crawl therealreal -o out.json
 """
 
 import re
@@ -32,7 +33,12 @@ class TherealrealSpider(scrapy.Spider):
         "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
         "DOWNLOAD_DELAY": 2,
         "PLAYWRIGHT_BROWSER_TYPE": "chromium",
-        "PLAYWRIGHT_LAUNCH_OPTIONS": {"headless": True},
+        # channel="chromium" forces the full Chromium build instead of the
+        # dedicated "headless shell" build. Some Playwright versions mis-resolve
+        # the headless-shell executable path on Apple Silicon (looks for the
+        # x64 folder on an arm64 host), which makes every launch fail with
+        # "Executable doesn't exist". Using the regular build avoids that bug.
+        "PLAYWRIGHT_LAUNCH_OPTIONS": {"headless": True, "channel": "chromium"},
     }
 
     start_urls = [

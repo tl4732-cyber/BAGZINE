@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars and fill in. terraform.tfvars is gitignored.
+
+alert_email = "you@example.com"
+
+# Leave both blank to run the Lambda crawler in mock mode (no real eBay
+# calls, useful to prove the pipeline works end-to-end before spending an
+# eBay API application review on it).
+# ebay_client_id     = ""
+# ebay_client_secret = ""

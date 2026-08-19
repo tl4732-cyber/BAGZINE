@@ -1,0 +1,126 @@
+[
+  {
+    "title": "Hermès Togo Birkin 30 Gold",
+    "expected": {"brand": "Hermès", "model": "Birkin", "size": "30", "color": "Gold", "leather": "Togo"}
+  },
+  {
+    "title": "Hermes Birkin 25 Noir Epsom Leather Palladium Hardware",
+    "expected": {"brand": "Hermès", "model": "Birkin", "size": "25", "color": "Black", "leather": "Epsom"}
+  },
+  {
+    "title": "Authentic Hermes Birkin 35 Etoupe Taurillon Clemence Handbag",
+    "expected": {"brand": "Hermès", "model": "Birkin", "size": "35", "color": "Etoupe", "leather": "Taurillon Clemence"}
+  },
+  {
+    "title": "Hermes Kelly 28 Sellier Epsom Gold Leather Handbag",
+    "expected": {"brand": "Hermès", "model": "Kelly", "size": "28", "color": "Gold", "leather": "Epsom"}
+  },
+  {
+    "title": "Hermès Kelly 32 Retourne Bleu Jean Clemence",
+    "expected": {"brand": "Hermès", "model": "Kelly", "size": "32", "color": "Bleu Jean", "leather": "Clemence"}
+  },
+  {
+    "title": "CHANEL Classic Double Flap Medium Black Caviar Gold Hardware",
+    "expected": {"brand": "Chanel", "model": "Classic Double Flap", "size": "Medium", "color": "Black", "leather": "Caviar"}
+  },
+  {
+    "title": "Chanel Maxi Single Flap White Lambskin Silver Hardware",
+    "expected": {"brand": "Chanel", "model": "Classic Flap", "size": "Maxi", "color": "White", "leather": "Lambskin"}
+  },
+  {
+    "title": "Chanel Reissue 2.55 Double Flap Grey Calfskin Bag",
+    "expected": {"brand": "Chanel", "model": "Classic Double Flap", "size": null, "color": "Grey", "leather": "Calf"}
+  },
+  {
+    "title": "Louis Vuitton Neverfull MM Brown",
+    "expected": {"brand": "Louis Vuitton", "model": "Neverfull", "size": "MM", "color": "Brown", "leather": null}
+  },
+  {
+    "title": "Celine Classic Flap Small Tan Calfskin",
+    "expected": null
+  },
+  {
+    "title": "Hermes Birkin authentic handbag",
+    "expected": {"brand": "Hermès", "model": "Birkin", "size": null, "color": null, "leather": null}
+  },
+  {
+    "title": "HERMES Vinyl Kelly Hand Bag Vinyl Clear Gold Auth",
+    "expected": {"brand": "Hermès", "model": "Vinyl Kelly", "size": null, "color": "Gold", "leather": "Vinyl"}
+  },
+  {
+    "title": "Authentic HERMES Haut a Courroies HAC 32 Fauve Ardennes",
+    "expected": {"brand": "Hermès", "model": "Haut à Courroies", "size": "32", "color": "Fauve", "leather": "Ardennes"}
+  },
+  {
+    "title": "Chanel Boy Bag Small Burgundy Caviar",
+    "expected": {"brand": "Chanel", "model": "Boy Bag", "size": "Small", "color": "Burgundy", "leather": "Caviar"}
+  },
+  {
+    "title": "Prada luxury handbag black calfskin",
+    "expected": null
+  },
+  {
+    "title": "Hermes Birkin Bag Charm New",
+    "expected": {"brand": "Hermès", "model": "Birkin", "size": null, "color": null, "leather": null},
+    "accessory": true
+  },
+  {
+    "title": "Clear Silicone Protective cover for handbag stud feet for hermes Birkin 25",
+    "expected": {"brand": "Hermès", "model": "Birkin", "size": "25", "color": null, "leather": null},
+    "accessory": true
+  },
+  {
+    "title": "HERMES Birkin 30 empty Gift Box 36x38x15cm",
+    "expected": {"brand": "Hermès", "model": "Birkin", "size": "30", "color": null, "leather": null},
+    "accessory": true
+  },
+  {
+    "title": "CHANEL Black Quilted CC Flap Crossbody Bag Dust Bag",
+    "expected": {"brand": "Chanel", "model": "Classic Flap", "size": null, "color": "Black", "leather": null},
+    "accessory": false
+  },
+  {
+    "title": "Luxury designer handbag authentic pre-owned",
+    "expected": null
+  },
+  {
+    "title": "Celine Nano Luggage Tote Black Calfskin",
+    "expected": {"brand": "Celine", "model": "Luggage", "size": null, "color": "Black", "leather": "Calf"}
+  },
+  {
+    "title": "Celine Trio Bag Crossbody Tan",
+    "expected": {"brand": "Celine", "model": "Trio", "size": null, "color": "Tan", "leather": null}
+  },
+  {
+    "title": "Christian Dior Lady Dior Medium Black Cannage Lambskin",
+    "expected": {"brand": "Dior", "model": "Lady Dior", "size": "Medium", "color": "Black", "leather": "Lambskin"}
+  },
+  {
+    "title": "Dior Saddle Bag Beige Oblique Canvas",
+    "expected": {"brand": "Dior", "model": "Saddle", "size": null, "color": "Beige", "leather": "Canvas"}
+  },
+  {
+    "title": "Prada Galleria Saffiano Black Bag",
+    "expected": {"brand": "Prada", "model": "Galleria", "size": null, "color": "Black", "leather": null}
+  },
+  {
+    "title": "Prada Re-Edition 2005 Nylon Black",
+    "expected": {"brand": "Prada", "model": "Re-Edition 2005", "size": null, "color": "Black", "leather": "Nylon"}
+  },
+  {
+    "title": "Saint Laurent Loulou Medium Black Matelasse",
+    "expected": {"brand": "Saint Laurent", "model": "Loulou", "size": "Medium", "color": "Black", "leather": null}
+  },
+  {
+    "title": "YSL Kate Bag Small Black Chevron",
+    "expected": {"brand": "Saint Laurent", "model": "Kate", "size": "Small", "color": "Black", "leather": null}
+  },
+  {
+    "title": "Saint Laurent Sac de Jour Black Leather",
+    "expected": {"brand": "Saint Laurent", "model": "Sac de Jour", "size": null, "color": "Black", "leather": null}
+  },
+  {
+    "title": "Coach Saddle Bag Tan Leather",
+    "expected": null
+  }
+]
