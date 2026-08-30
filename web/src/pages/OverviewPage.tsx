@@ -68,8 +68,15 @@ export function OverviewPage() {
   if (error) {
     return (
       <div className="error-box">
-        <p>Could not load data. Is the API running?</p>
-        <code>bash scripts/run_api.sh</code>
+        <p>Could not load the explore catalog.</p>
+        {import.meta.env.DEV ? (
+          <code>bash scripts/run_api.sh</code>
+        ) : (
+          <p className="muted">
+            The public API is not connected yet. Deploy the FastAPI service and set{" "}
+            <code>VITE_API_URL</code> in the GitHub Pages workflow.
+          </p>
+        )}
         <p className="muted">{error}</p>
       </div>
     );

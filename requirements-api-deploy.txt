@@ -1,0 +1,6 @@
+# Minimal deps for hosting the read-only FastAPI dashboard API.
+fastapi>=0.115,<1
+uvicorn[standard]>=0.32,<1
+sqlalchemy>=2.0,<3
+psycopg2-binary>=2.9
+pydantic>=2.5,<3

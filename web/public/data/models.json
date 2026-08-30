@@ -1,0 +1,242 @@
+[
+  {
+    "brand": "Celine",
+    "model": "Luggage",
+    "listing_count": 181,
+    "min_price": "95.00",
+    "avg_price": "854.61",
+    "max_price": "3229.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:00:54.989397Z"
+  },
+  {
+    "brand": "Chanel",
+    "model": "Classic Flap",
+    "listing_count": 488,
+    "min_price": "125.00",
+    "avg_price": "4485.76",
+    "max_price": "29500.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:00:22.103447Z"
+  },
+  {
+    "brand": "Chanel",
+    "model": "Classic Double Flap",
+    "listing_count": 399,
+    "min_price": "600.00",
+    "avg_price": "5595.83",
+    "max_price": "14200.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:00:21.839960Z"
+  },
+  {
+    "brand": "Chanel",
+    "model": "Boy Bag",
+    "listing_count": 285,
+    "min_price": "473.25",
+    "avg_price": "3017.96",
+    "max_price": "8150.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:00:27.099798Z"
+  },
+  {
+    "brand": "Dior",
+    "model": "Lady Dior",
+    "listing_count": 229,
+    "min_price": "240.33",
+    "avg_price": "1929.11",
+    "max_price": "6898.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:00:59.516842Z"
+  },
+  {
+    "brand": "Dior",
+    "model": "Saddle",
+    "listing_count": 201,
+    "min_price": "50.00",
+    "avg_price": "1785.74",
+    "max_price": "11990.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:01:04.640648Z"
+  },
+  {
+    "brand": "Fendi",
+    "model": "Baguette",
+    "listing_count": 241,
+    "min_price": "188.00",
+    "avg_price": "1485.06",
+    "max_price": "9999.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:00:49.930987Z"
+  },
+  {
+    "brand": "Fendi",
+    "model": "Peekaboo",
+    "listing_count": 1,
+    "min_price": "2705.00",
+    "avg_price": "2705.00",
+    "max_price": "2705.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-01T00:45:42.037817Z"
+  },
+  {
+    "brand": "Gucci",
+    "model": "Marmont",
+    "listing_count": 258,
+    "min_price": "110.00",
+    "avg_price": "871.05",
+    "max_price": "4910.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:00:45.321088Z"
+  },
+  {
+    "brand": "Gucci",
+    "model": "Dionysus",
+    "listing_count": 3,
+    "min_price": "595.00",
+    "avg_price": "800.00",
+    "max_price": "1050.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-01T00:44:44.583662Z"
+  },
+  {
+    "brand": "Herm\u00e8s",
+    "model": "Birkin",
+    "listing_count": 323,
+    "min_price": "5006.91",
+    "avg_price": "18580.18",
+    "max_price": "188888.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:00:10.667421Z"
+  },
+  {
+    "brand": "Herm\u00e8s",
+    "model": "Constance",
+    "listing_count": 182,
+    "min_price": "200.00",
+    "avg_price": "10424.03",
+    "max_price": "39996.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:00:17.169324Z"
+  },
+  {
+    "brand": "Herm\u00e8s",
+    "model": "Kelly",
+    "listing_count": 94,
+    "min_price": "2659.00",
+    "avg_price": "9495.07",
+    "max_price": "27210.37",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-01T00:45:44.354427Z"
+  },
+  {
+    "brand": "Herm\u00e8s",
+    "model": "Haut \u00e0 Courroies",
+    "listing_count": 11,
+    "min_price": "7999.00",
+    "avg_price": "16553.64",
+    "max_price": "25999.99",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-23T16:00:13.564533Z"
+  },
+  {
+    "brand": "Herm\u00e8s",
+    "model": "Vinyl Kelly",
+    "listing_count": 6,
+    "min_price": "130.00",
+    "avg_price": "269.00",
+    "max_price": "330.88",
+    "currency": "USD",
+    "last_price_observed_at": "2026-07-06T23:42:30.890094Z"
+  },
+  {
+    "brand": "Herm\u00e8s",
+    "model": "Picotin",
+    "listing_count": 3,
+    "min_price": "4945.00",
+    "avg_price": "5216.67",
+    "max_price": "5485.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-01T00:44:17.860624Z"
+  },
+  {
+    "brand": "Herm\u00e8s",
+    "model": "Evelyne",
+    "listing_count": 1,
+    "min_price": "3035.00",
+    "avg_price": "3035.00",
+    "max_price": "3035.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-01T00:44:37.590855Z"
+  },
+  {
+    "brand": "Herm\u00e8s",
+    "model": "Lindy",
+    "listing_count": 1,
+    "min_price": "11335.00",
+    "avg_price": "11335.00",
+    "max_price": "11335.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-01T00:45:08.014690Z"
+  },
+  {
+    "brand": "Louis Vuitton",
+    "model": "Speedy",
+    "listing_count": 313,
+    "min_price": "179.00",
+    "avg_price": "652.67",
+    "max_price": "3500.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:00:36.419182Z"
+  },
+  {
+    "brand": "Louis Vuitton",
+    "model": "Neverfull",
+    "listing_count": 253,
+    "min_price": "314.00",
+    "avg_price": "902.55",
+    "max_price": "6000.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:00:31.738802Z"
+  },
+  {
+    "brand": "Louis Vuitton",
+    "model": "Pochette M\u00e9tis",
+    "listing_count": 182,
+    "min_price": "380.00",
+    "avg_price": "1897.98",
+    "max_price": "4024.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:00:41.023083Z"
+  },
+  {
+    "brand": "Louis Vuitton",
+    "model": "Alma",
+    "listing_count": 4,
+    "min_price": "1195.00",
+    "avg_price": "2171.25",
+    "max_price": "3705.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-01T00:45:20.664927Z"
+  },
+  {
+    "brand": "Prada",
+    "model": "Galleria",
+    "listing_count": 182,
+    "min_price": "150.00",
+    "avg_price": "1003.97",
+    "max_price": "5000.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:01:09.717201Z"
+  },
+  {
+    "brand": "Saint Laurent",
+    "model": "Loulou",
+    "listing_count": 205,
+    "min_price": "475.00",
+    "avg_price": "1711.61",
+    "max_price": "3039.00",
+    "currency": "USD",
+    "last_price_observed_at": "2026-08-29T16:01:14.386820Z"
+  }
+]
