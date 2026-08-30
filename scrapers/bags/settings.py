@@ -1,56 +1,59 @@
 import os
 import sys
-from pathlib import Path
 
-from dotenv import load_dotenv
+# Allow imports from project root (db package)
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT))
-
-# Load .env from project root (parent of scrapers/)
-load_dotenv(ROOT / ".env")
-
-# Scrapy's project name
 BOT_NAME = "bags"
 
-# Look for spiders inside bags/spiders/
 SPIDER_MODULES = ["bags.spiders"]
 NEWSPIDER_MODULE = "bags.spiders"
 
-# It means Scrapy will check a site's robots.txt file and obey the rules.
 ROBOTSTXT_OBEY = True
+
 CONCURRENT_REQUESTS_PER_DOMAIN = 1
-# scrapy will wait 1 second between requests to the same domain.
 DOWNLOAD_DELAY = 1
 
-# Pipelines are used to process the data after it is scraped.
-# The values themselves are arbitrary integers (Scrapy convention is usually 0–1000); what matters is only their relative order
+AUTOTHROTTLE_ENABLED = True
+AUTOTHROTTLE_START_DELAY = 1
+AUTOTHROTTLE_MAX_DELAY = 30
+AUTOTHROTTLE_TARGET_CONCURRENCY = 0.5
+
+USER_AGENT = (
+    "LuxuryVintageBagPriceBot/1.0 (+https://github.com/tl4732-cyber/luxury_vintage_bag_price)"
+)
+
 ITEM_PIPELINES = {
     "bags.pipelines.ValidationPipeline": 100,
     "bags.pipelines.NormalizationPipeline": 200,
-    "bags.pipelines.S3RawArchivePipeline": 205,
-    "bags.pipelines.JunkListingPipeline": 210,
-    "bags.pipelines.ProductLinkPipeline": 250,
+    "bags.pipelines.ScrapeRunPipeline": 250,
     "bags.pipelines.PostgresListingPipeline": 300,
     "bags.pipelines.PriceObservationPipeline": 400,
+    "bags.pipelines.ProductMatchingPipeline": 500,
 }
 
-
-FEED_EXPORT_ENCODING = "utf-8"
-LOG_LEVEL = "INFO"
-
-EBAY_CLIENT_ID = os.getenv("EBAY_CLIENT_ID", "")
-EBAY_CLIENT_SECRET = os.getenv("EBAY_CLIENT_SECRET", "")
-EBAY_ENV = os.getenv("EBAY_ENV", "sandbox")
-
-DATABASE_URL = os.getenv(
+DATABASE_URL = os.environ.get(
     "DATABASE_URL",
-    "postgresql://lvbp:lvbp_dev@localhost:5433/luxury_bags",
+    "postgresql://lvbp:lvbp_dev@localhost:5432/luxury_bags",
 )
 
-# AWS S3 raw-archive landing zone (bronze layer). Leave S3_ARCHIVE_BUCKET
-# unset for local dev — the pipeline no-ops without it. See
-# bags/settings_lambda.py for the crawl profile used inside AWS Lambda.
-S3_ARCHIVE_BUCKET = os.getenv("S3_ARCHIVE_BUCKET", "")
-S3_ARCHIVE_PREFIX = os.getenv("S3_ARCHIVE_PREFIX", "raw")
+EBAY_CLIENT_ID = os.environ.get("EBAY_CLIENT_ID", "")
+EBAY_CLIENT_SECRET = os.environ.get("EBAY_CLIENT_SECRET", "")
+EBAY_ENV = os.environ.get("EBAY_ENV", "sandbox")
 
+FEED_EXPORT_ENCODING = "utf-8"
+LOG_LEVEL = os.environ.get("SCRAPY_LOG_LEVEL", "INFO")
+LOG_FILE = "bag_scraper.log"
+
+RETRY_ENABLED = True
+RETRY_TIMES = 3
+RETRY_HTTP_CODES = [429, 500, 502, 503, 504]
+
+# scrapy-playwright (The RealReal spider)
+PLAYWRIGHT_BROWSER_TYPE = "chromium"
+PLAYWRIGHT_LAUNCH_OPTIONS = {"headless": True}
+DOWNLOAD_HANDLERS = {
+    "http": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+    "https": "scrapy_playwright.handler.ScrapyPlaywrightDownloadHandler",
+}
+TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"

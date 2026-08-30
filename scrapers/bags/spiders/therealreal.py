@@ -1,23 +1,15 @@
 """
-Step 5: The RealReal handbag listings spider (scrapy-playwright).
+The RealReal handbag listings spider (scrapy-playwright).
 
-NOT VIABLE FOR LIVE SCRAPING: The RealReal serves a PerimeterX behavioral
-CAPTCHA ("Press & Hold") to every request — plain HTTP and headless Chromium
-alike — regardless of request rate. This is deliberate anti-bot protection,
-not a bug, and defeating it would mean circumventing their Terms of Service.
-Kept only for offline/mock testing; see spiders/fashionphile.py for a real,
-ToS-compliant marketplace source (public Shopify JSON API, no bot challenge).
-
-Offline test (no browser, no network):
-  scrapy crawl therealreal -a use_mock=1 -o out.json
+Pilot categories: Chanel and Hermès women handbags.
 """
 
 import re
 
 import scrapy
-from scrapy_playwright.page import PageMethod
-
 from bags.items import ListingItem
+from bags.utils import utc_now
+from scrapy_playwright.page import PageMethod
 
 
 class TherealrealSpider(scrapy.Spider):
@@ -32,13 +24,9 @@ class TherealrealSpider(scrapy.Spider):
         "TWISTED_REACTOR": "twisted.internet.asyncioreactor.AsyncioSelectorReactor",
         "CONCURRENT_REQUESTS_PER_DOMAIN": 1,
         "DOWNLOAD_DELAY": 2,
+        "AUTOTHROTTLE_TARGET_CONCURRENCY": 0.5,
         "PLAYWRIGHT_BROWSER_TYPE": "chromium",
-        # channel="chromium" forces the full Chromium build instead of the
-        # dedicated "headless shell" build. Some Playwright versions mis-resolve
-        # the headless-shell executable path on Apple Silicon (looks for the
-        # x64 folder on an arm64 host), which makes every launch fail with
-        # "Executable doesn't exist". Using the regular build avoids that bug.
-        "PLAYWRIGHT_LAUNCH_OPTIONS": {"headless": True, "channel": "chromium"},
+        "PLAYWRIGHT_LAUNCH_OPTIONS": {"headless": True},
     }
 
     start_urls = [
@@ -46,29 +34,10 @@ class TherealrealSpider(scrapy.Spider):
         "https://www.therealreal.com/designers/hermes/women/handbags",
     ]
 
-    def __init__(self, use_mock=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.use_mock = use_mock in (True, "true", "1", 1)
-
     def log_error(self, failure):
-        response = getattr(failure.value, "response", None)
-        if response is not None and response.status == 403:
-            self.logger.error(
-                "The RealReal returned 403 (bot protection / captcha). "
-                "Live scraping is blocked from automated browsers. "
-                "Use: scrapy crawl therealreal -a use_mock=1 -o out.json "
-                "or rely on ebay_api for real marketplace data."
-            )
-        else:
-            self.logger.error(repr(failure))
+        self.logger.error(repr(failure))
 
-    async def start(self):
-        if self.use_mock:
-            self.logger.info("use_mock=1 — yielding sample TRR items (no browser)")
-            for item in self._mock_items():
-                yield item
-            return
-
+    def start_requests(self):
         for url in self.start_urls:
             yield scrapy.Request(
                 url,
@@ -84,12 +53,13 @@ class TherealrealSpider(scrapy.Spider):
 
     def parse(self, response):
         """
+        @url https://www.therealreal.com/designers/chanel/women/handbags
         @returns items 0 100
         @returns request 0 20
         @scrapes url title price_amount
         """
         cards = response.css(
-            "[data-testid='product-card'], .product-card, .plp-product-card"
+            "[data-testid='product-card'], .product-card, .plp-product-card, article a[href*='/products/']"
         )
         if not cards:
             cards = response.css("a[href*='/products/']")
@@ -97,11 +67,11 @@ class TherealrealSpider(scrapy.Spider):
         seen_urls = set()
         for card in cards:
             link = card.css("a::attr(href)").get() or card.attrib.get("href")
-            if not link:
-                link = card.xpath("ancestor-or-self::a/@href").get()
             if not link or "/products/" not in link:
+                parent_link = card.xpath("ancestor-or-self::a/@href").get()
+                link = parent_link
+            if not link:
                 continue
-
             url = response.urljoin(link)
             if url in seen_urls:
                 continue
@@ -118,12 +88,7 @@ class TherealrealSpider(scrapy.Spider):
                 or card.css(".price::text").get()
                 or card.css("[class*='price']::text").get()
             )
-
-            if title and price_text:
-                item = self._build_item(url, title, price_text, response.url)
-                if item:
-                    yield item
-            else:
+            if not title and not price_text:
                 yield scrapy.Request(
                     url,
                     callback=self.parse_product,
@@ -131,6 +96,11 @@ class TherealrealSpider(scrapy.Spider):
                     meta={"playwright": True},
                     dont_filter=True,
                 )
+                continue
+
+            item = self._build_item(url, title, price_text, response.url)
+            if item:
+                yield item
 
         next_page = (
             response.css("a[rel='next']::attr(href)").get()
@@ -168,17 +138,27 @@ class TherealrealSpider(scrapy.Spider):
             yield item
 
     def _build_item(self, url, title, price_text, page_url) -> ListingItem | None:
-        price = self._parse_price(price_text)
-        if not url or price is None:
+        if not url:
             return None
+        price = self._parse_price(price_text)
+        if price is None:
+            return None
+
+        source_id = url.rstrip("/").split("/")[-1]
+        brand = self._brand_from_url(page_url) or self._brand_from_title(title or "")
 
         item = ListingItem()
         item["marketplace"] = "therealreal"
-        item["source_listing_id"] = url.rstrip("/").split("/")[-1]
+        item["source_listing_id"] = source_id
         item["url"] = url
         item["title"] = (title or "").strip()
         item["price_amount"] = price
         item["currency"] = "USD"
+        item["price_type"] = "ask"
+        item["brand"] = brand
+        item["model"] = self._model_from_title(title or "")
+        item["status"] = "active"
+        item["scraped_at"] = utc_now()
         return item
 
     def _parse_price(self, text: str | None) -> float | None:
@@ -192,32 +172,31 @@ class TherealrealSpider(scrapy.Spider):
         except ValueError:
             return None
 
-    def _brand_from_page(self, page_url: str) -> str | None:
-        if "/designers/chanel/" in page_url:
+    def _brand_from_url(self, url: str) -> str | None:
+        if "/designers/chanel/" in url:
             return "Chanel"
-        if "/designers/hermes/" in page_url:
+        if "/designers/hermes/" in url:
             return "Hermès"
+        if "/designers/louis-vuitton/" in url:
+            return "Louis Vuitton"
         return None
 
-    def _mock_items(self):
-        rows = [
-            {
-                "url": "https://www.therealreal.com/products/mock-chanel-classic-flap",
-                "title": "Chanel Lambskin Quilted Classic Double Flap Bag",
-                "price_text": "$4,850.00",
-                "condition_raw": "Very Good",
-            },
-            {
-                "url": "https://www.therealreal.com/products/mock-hermes-birkin-30",
-                "title": "Hermès Togo Birkin 30 Gold",
-                "price_text": "$18,200.00",
-                "condition_raw": "Excellent",
-            },
+    def _brand_from_title(self, title: str) -> str | None:
+        for brand in ("Chanel", "Hermès", "Hermes", "Louis Vuitton", "Gucci", "Prada"):
+            if brand.lower() in title.lower():
+                return "Hermès" if brand == "Hermes" else brand
+        return None
+
+    def _model_from_title(self, title: str) -> str | None:
+        patterns = [
+            "Classic Flap",
+            "Boy Bag",
+            "Birkin",
+            "Kelly",
+            "Speedy",
+            "Neverfull",
         ]
-        for row in rows:
-            item = self._build_item(
-                row["url"], row["title"], row["price_text"], row["url"]
-            )
-            if item:
-                item["condition_raw"] = row["condition_raw"]
-                yield item
+        for pattern in patterns:
+            if pattern.lower() in title.lower():
+                return pattern
+        return None

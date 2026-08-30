@@ -2,6 +2,8 @@ import hashlib
 import json
 from datetime import datetime, timezone
 
+from slugify import slugify
+
 CONDITION_MAP = {
     "new with tags": "new",
     "new without tags": "like_new",
@@ -13,18 +15,10 @@ CONDITION_MAP = {
     "good": "good",
     "fair": "fair",
     "poor": "poor",
+    "pre-owned": "good",
+    "used": "good",
     "like new": "like_new",
 }
-
-CONDITION_PATTERNS = [
-    ("new", ("new with tags", "new with box", "brand new", "giftable")),
-    ("like_new", ("new without tags", "new without box", "like new", "unused")),
-    ("excellent", ("excellent", "pristine")),
-    ("very_good", ("very good",)),
-    ("good", ("pre-owned - good", "preowned - good", "used - good", "good condition")),
-    ("fair", ("fair", "worn", "shows wear")),
-    ("poor", ("poor", "for parts", "flawed")),
-]
 
 
 def utc_now() -> datetime:
@@ -33,27 +27,31 @@ def utc_now() -> datetime:
 
 def normalize_condition(raw: str | None) -> str | None:
     if not raw:
-        return "unknown"
-    key = " ".join(raw.strip().lower().replace("_", " ").split())
-    if key in CONDITION_MAP:
-        return CONDITION_MAP[key]
-    for normalized, phrases in CONDITION_PATTERNS:
-        if any(phrase in key for phrase in phrases):
-            return normalized
-    return "unknown"
+        return None
+    key = raw.strip().lower()
+    return CONDITION_MAP.get(key, slugify(key, max_length=64) or None)
 
 
 def compute_content_hash(fields: dict) -> str:
+    """Hash normalized listing fields for change detection."""
     payload = {
         k: fields.get(k)
         for k in (
             "title",
-            "price_amount",
-            "currency",
+            "brand",
+            "model",
+            "size",
+            "color",
+            "material",
+            "year",
+            "hardware",
             "condition_normalized",
             "status",
-            "attributes_raw",
         )
     }
     canonical = json.dumps(payload, sort_keys=True, default=str)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def listing_source_key(marketplace: str, source_listing_id: str) -> str:
+    return hashlib.sha256(f"{marketplace}:{source_listing_id}".encode()).hexdigest()
