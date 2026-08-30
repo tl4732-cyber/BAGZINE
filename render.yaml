@@ -1,18 +1,15 @@
 # Free API hosting on Render + free Postgres on Neon.
-#
-# 1. Create a Neon database and copy its connection string.
-# 2. Render dashboard → New → Blueprint → connect this repo.
-# 3. When prompted, set DATABASE_URL to your Neon connection string.
-# 4. After deploy, add the Render URL as GitHub secret VITE_API_URL.
 services:
   - type: web
     name: bagzine-api
     runtime: python
     plan: free
-    buildCommand: pip install -r requirements-api-deploy.txt
-    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /health
+    buildCommand: pip install --upgrade pip && pip install -r requirements-api-deploy.txt
+    startCommand: PYTHONPATH=/opt/render/project/src uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
     envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
       - key: PYTHONPATH
         value: /opt/render/project/src
       - key: DATABASE_URL

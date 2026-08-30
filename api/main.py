@@ -34,6 +34,11 @@ app.add_middleware(
 )
 
 
+@app.get("/", tags=["meta"])
+def root() -> dict[str, str]:
+    return {"status": "ok"}
+
+
 @app.get("/health", response_model=HealthResponse, tags=["meta"])
 def health(db: Session = Depends(get_db)) -> HealthResponse:
     try:

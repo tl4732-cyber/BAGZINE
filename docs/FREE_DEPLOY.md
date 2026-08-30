@@ -122,5 +122,7 @@ No Render redeploy needed for DB updates. Push the models snapshot if you want t
 |---------|-----|
 | API returns 503 on first visit | Free Render sleeps — wait 30–60s and retry |
 | `Failed to fetch` on explore | Check `VITE_API_URL` secret and re-run Pages deploy |
-| `health` shows `database: error` | Wrong `DATABASE_URL` on Render — re-paste Neon string |
+| `health` shows `database: error` | Wrong `DATABASE_URL` on Render — re-paste Neon string (use **Show password** → copy) |
+| Render deploy failed | Open the failed deploy → **Logs**; common fixes: set `DATABASE_URL`, redeploy after latest `main` push |
+| Password has special characters | In Neon, reset password to letters+numbers only, update `DATABASE_URL` on Render |
 | Import fails on Neon | Ensure connection string ends with `?sslmode=require` |
