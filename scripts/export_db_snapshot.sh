@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Export local Postgres data for importing into Render/Neon.
+# Export local Postgres data for importing into Neon (or any hosted Postgres).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${1:-$ROOT/bagzine_snapshot.sql}"
