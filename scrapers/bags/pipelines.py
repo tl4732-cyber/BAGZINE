@@ -1,174 +1,55 @@
-import json
-import uuid
 from datetime import datetime, timezone
 
 from itemadapter import ItemAdapter
 from pydantic import ValidationError
 from scrapy.exceptions import DropItem
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from bags.product_linking import is_suspicious_price, should_drop_listing, should_link_listing
-from bags.product_matching import get_or_create_variant
 from bags.schemas import ListingSchema
-from bags.title_parser import match_product
 from bags.utils import compute_content_hash, normalize_condition, utc_now
-from db.models import Listing, ListingStatus, Marketplace, PriceObservation, PriceType
+from db.models import (
+    Listing,
+    ListingStatus,
+    Marketplace,
+    PriceObservation,
+    PriceType,
+    ScrapeRun,
+)
+from db.product_matching import match_listing_to_product
 from db.session import get_session_factory
 
-# This is a helper function to parse the scraped_at field into a datetime object.
-def _parse_scraped_at(value) -> datetime: 
 
-    if isinstance(value, datetime):
-        return value if value.tzinfo else value.replace(tzinfo=timezone.utc) 
-    if isinstance(value, str):
-        return datetime.fromisoformat(value)
-    return utc_now() 
-
-
-class ValidationPipeline: 
-    """Drop items missing required fields or with invalid values."""
-    # uses a Pydantic model ListingSchema to validate the item
- 
-    def process_item(self, item, spider): 
+class ValidationPipeline:
+    def process_item(self, item, spider):
         adapter = ItemAdapter(item)
-        try: 
+        try:
             validated = ListingSchema(**adapter.asdict())
             adapter.update(validated.model_dump())
         except ValidationError as exc:
-
-            spider.logger.warning("Dropped invalid item: %s", exc)
             raise DropItem(f"Validation failed: {exc}") from exc
         return item
 
 
 class NormalizationPipeline:
-    """Clean and enrich items before export or database storage."""
-
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
-        if adapter.get("title"):
-            adapter["title"] = adapter["title"].strip()
-        adapter["currency"] = (adapter.get("currency") or "USD").upper()
-        adapter["condition_normalized"] = normalize_condition(adapter.get("condition_raw"))
-        if not adapter.get("status"):
-            adapter["status"] = "active"
         if not adapter.get("scraped_at"):
-            adapter["scraped_at"] = utc_now().isoformat()
+            adapter["scraped_at"] = utc_now()
+        adapter["condition_normalized"] = normalize_condition(
+            adapter.get("condition_raw") or adapter.get("condition_normalized")
+        )
         adapter["content_hash"] = compute_content_hash(adapter.asdict())
         return item
 
 
-class JunkListingPipeline:
-    """Drop junk listings (organizers, etc.) before database storage."""
-
-    def process_item(self, item, spider):
-        adapter = ItemAdapter(item)
-        title = adapter.get("title")
-        match = match_product(title, adapter.get("attributes_raw"))
-        if should_drop_listing(title, adapter.get("price_amount"), match.product):
-            spider.logger.info("Dropped listing (no brand/model or junk): %s", title)
-            raise DropItem(f"Unidentifiable or junk listing: {title}")
-        return item
-
-
-class S3RawArchivePipeline:
-    """Land every scraped item in S3 as an immutable raw/bronze-layer object.
-
-    Disabled by default for local dev (no AWS credentials required). Set the
-    ``S3_ARCHIVE_BUCKET`` setting/env var to enable it — see
-    ``bags/settings_lambda.py`` for the AWS Lambda crawl profile, and
-    ``scripts/load_from_s3.py`` for the loader that replays these objects
-    through the rest of the pipeline (junk filtering, product matching,
-    Postgres upsert) from a machine that can reach the database.
-
-    Items are buffered in memory and flushed as a single newline-delimited
-    JSON object per spider run to keep S3 PUT requests (and cost) low.
-    """
-
-    def __init__(self, bucket: str | None, prefix: str):
-        self.bucket = bucket
-        self.prefix = prefix.strip("/")
-        self._buffer: list[dict] = []
-        self._client = None
-
-    @classmethod
-    def from_crawler(cls, crawler):
-        return cls(
-            bucket=crawler.settings.get("S3_ARCHIVE_BUCKET") or None,
-            prefix=crawler.settings.get("S3_ARCHIVE_PREFIX", "raw"),
-        )
-
-    def open_spider(self, spider):
-        if not self.bucket:
-            spider.logger.info("S3 archive disabled (S3_ARCHIVE_BUCKET not set)")
-            return
-        import boto3
-
-        self._client = boto3.client("s3")
-        self._buffer = []
-
-    def process_item(self, item, spider):
-        if self.bucket:
-            self._buffer.append(dict(ItemAdapter(item).asdict()))
-        return item
-
-    def close_spider(self, spider):
-        if not self.bucket or not self._buffer:
-            return
-        now = utc_now()
-        key = (
-            f"{self.prefix}/{spider.name}/{now:%Y/%m/%d}/"
-            f"{spider.name}_{now:%Y%m%dT%H%M%SZ}_{uuid.uuid4().hex[:8]}.jsonl"
-        )
-        body = "\n".join(json.dumps(record, default=str) for record in self._buffer)
-        self._client.put_object(
-            Bucket=self.bucket,
-            Key=key,
-            Body=body.encode("utf-8"),
-            ContentType="application/x-ndjson",
-        )
-        spider.logger.info("Archived %d items to s3://%s/%s", len(self._buffer), self.bucket, key)
-
-
-class ProductLinkPipeline:
-    """Parse title into brand/model attributes and resolve a product variant row."""
-
-    def process_item(self, item, spider):
-        adapter = ItemAdapter(item)
-        title = adapter.get("title")
-        price_amount = adapter.get("price_amount")
-        match = match_product(title, adapter.get("attributes_raw"))
-        parsed = match.product
-
-        adapter["match_confidence"] = match.confidence
-        adapter["match_method"] = match.method
-        evidence = dict(match.evidence)
-        if parsed and is_suspicious_price(parsed, price_amount):
-            evidence["price_anomaly"] = {
-                "value": True,
-                "source": "review_rule",
-                "matched_text": f"ask={price_amount}",
-            }
-        adapter["match_evidence"] = evidence
-
-        if not should_link_listing(title, price_amount, parsed):
-            adapter["product_variant_id"] = None
-            return item
-
-        Session = get_session_factory()
-        with Session() as session:
-            variant = get_or_create_variant(session, parsed)
-            adapter["product_variant_id"] = variant.id
-            session.commit()
-        return item
-
-
-class PostgresListingPipeline:
-    """Upsert listing row; set listing_id on the item for price pipeline."""
+class ScrapeRunPipeline:
+    """Track scrape run metadata per spider execution."""
 
     def __init__(self):
-        self.session = None
-        self._marketplace_ids: dict[str, int] = {}
+        self.run_id = None
+        self.items_seen = 0
+        self.items_new = 0
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -177,82 +58,129 @@ class PostgresListingPipeline:
     def open_spider(self, spider):
         Session = get_session_factory()
         self.session = Session()
-        rows = self.session.execute(select(Marketplace)).scalars().all()
-        self._marketplace_ids = {row.code: row.id for row in rows}
+        run = ScrapeRun(spider_name=spider.name, status="running")
+        self.session.add(run)
+        self.session.commit()
+        self.run_id = run.id
+        spider.scrape_run_id = self.run_id
+
+    def close_spider(self, spider):
+        if self.run_id and self.session:
+            run = self.session.get(ScrapeRun, self.run_id)
+            if run:
+                run.finished_at = datetime.now(timezone.utc)
+                run.status = "completed"
+                run.items_seen = self.items_seen
+                run.items_new = getattr(spider, "_items_new", self.items_new)
+            self.session.commit()
+            self.session.close()
+
+    def process_item(self, item, spider):
+        self.items_seen += 1
+        return item
+
+    def note_new_listing(self):
+        self.items_new += 1
+
+
+class PostgresListingPipeline:
+    def __init__(self):
+        self.session: Session | None = None
+        self._marketplace_cache: dict[str, int] = {}
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls()
+
+    def open_spider(self, spider):
+        Session = get_session_factory()
+        self.session = Session()
+        self._load_marketplaces()
 
     def close_spider(self, spider):
         if self.session:
             self.session.close()
 
+    def _load_marketplaces(self):
+        rows = self.session.execute(select(Marketplace)).scalars().all()
+        self._marketplace_cache = {m.code: m.id for m in rows}
+
     def _marketplace_id(self, code: str) -> int:
-        if code not in self._marketplace_ids:
-            mp = Marketplace(code=code, name=code.title())
+        if code not in self._marketplace_cache:
+            mp = Marketplace(code=code, name=code.title(), base_url=f"https://{code}.com")
             self.session.add(mp)
             self.session.flush()
-            self._marketplace_ids[code] = mp.id
-        return self._marketplace_ids[code]
+            self._marketplace_cache[code] = mp.id
+        return self._marketplace_cache[code]
 
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
-        try:
-            marketplace_id = self._marketplace_id(adapter["marketplace"])
-            source_id = str(adapter["source_listing_id"])
-            now = utc_now()
+        marketplace_id = self._marketplace_id(adapter["marketplace"])
+        source_id = str(adapter["source_listing_id"])
 
-            listing = self.session.execute(
-                select(Listing).where(
-                    Listing.marketplace_id == marketplace_id,
-                    Listing.source_listing_id == source_id,
-                )
-            ).scalar_one_or_none()
+        listing = self.session.execute(
+            select(Listing).where(
+                Listing.marketplace_id == marketplace_id,
+                Listing.source_listing_id == source_id,
+            )
+        ).scalar_one_or_none()
 
-            is_new = listing is None
-            if listing is None:
-                listing = Listing(
-                    marketplace_id=marketplace_id,
-                    source_listing_id=source_id,
-                    url=adapter["url"],
-                    first_seen_at=now,
-                )
-                self.session.add(listing)
+        status = ListingStatus(adapter.get("status", "active"))
+        now = utc_now()
+        is_new = listing is None
 
-            listing.url = adapter["url"]
-            listing.title = adapter.get("title")
-            if adapter.get("image_url"):
-                listing.image_url = adapter.get("image_url")
-            listing.condition_raw = adapter.get("condition_raw")
-            listing.condition_normalized = adapter.get("condition_normalized")
-            listing.status = ListingStatus(adapter.get("status", "active"))
-            listing.content_hash = adapter.get("content_hash")
-            listing.product_variant_id = adapter.get("product_variant_id")
-            listing.attributes_raw = adapter.get("attributes_raw") or {}
-            listing.match_confidence = adapter.get("match_confidence")
-            listing.match_method = adapter.get("match_method")
-            listing.match_evidence = adapter.get("match_evidence") or {}
-            listing.last_seen_at = now
-            self.session.flush()
+        if listing is None:
+            listing = Listing(
+                marketplace_id=marketplace_id,
+                source_listing_id=source_id,
+                url=adapter["url"],
+                first_seen_at=now,
+            )
+            self.session.add(listing)
+            spider._items_new = getattr(spider, "_items_new", 0) + 1
 
-            adapter["listing_id"] = listing.id
-            adapter["_is_new_listing"] = is_new
-            self.session.commit()
-        except Exception:
-            self.session.rollback()
-            raise
+        listing.url = adapter["url"]
+        listing.title = adapter.get("title")
+        listing.condition_raw = adapter.get("condition_raw")
+        listing.condition_normalized = adapter.get("condition_normalized")
+        listing.seller_type = adapter.get("seller_type")
+        listing.status = status
+        listing.brand_raw = adapter.get("brand")
+        listing.model_raw = adapter.get("model")
+        listing.last_seen_at = now
+        listing.content_hash = adapter.get("content_hash")
+        self.session.flush()
+
+        adapter["listing_id"] = listing.id
+        adapter["_is_new_listing"] = is_new
+        adapter["_listing"] = listing
+        self.session.commit()
         return item
 
 
 class PriceObservationPipeline:
-    """Append price row only when price changed (or first time seen)."""
+    def __init__(self):
+        self.session: Session | None = None
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls()
+
+    def open_spider(self, spider):
+        pass
+
+    def close_spider(self, spider):
+        pass
 
     def process_item(self, item, spider):
         adapter = ItemAdapter(item)
         listing_id = adapter.get("listing_id")
         if not listing_id:
-            raise DropItem("listing_id missing — run PostgresListingPipeline first")
+            raise DropItem("listing_id missing — PostgresListingPipeline must run first")
 
-        Session = get_session_factory()
-        with Session() as session:
-            last = session.execute(
+        SessionFactory = get_session_factory()
+        with SessionFactory() as session:
+            last_obs = session.execute(
                 select(PriceObservation)
                 .where(PriceObservation.listing_id == listing_id)
                 .order_by(PriceObservation.observed_at.desc())
@@ -261,20 +189,58 @@ class PriceObservationPipeline:
 
             price_amount = float(adapter["price_amount"])
             currency = adapter.get("currency", "USD")
+            price_type = PriceType(adapter.get("price_type", "ask"))
+
             should_insert = True
-            if last:
-                same = float(last.price_amount) == price_amount and last.currency == currency
-                should_insert = not same or adapter.get("_is_new_listing")
+            if last_obs:
+                same_price = (
+                    float(last_obs.price_amount) == price_amount
+                    and last_obs.currency == currency
+                    and last_obs.price_type == price_type
+                )
+                should_insert = not same_price or adapter.get("_is_new_listing")
 
             if should_insert:
                 session.add(
                     PriceObservation(
                         listing_id=listing_id,
-                        observed_at=_parse_scraped_at(adapter.get("scraped_at")),
+                        observed_at=adapter.get("scraped_at") or utc_now(),
                         price_amount=price_amount,
                         currency=currency,
-                        price_type=PriceType.ASK,
+                        price_type=price_type,
+                        is_sale=price_type == PriceType.SOLD,
+                        raw_price_text=str(adapter.get("price_amount")),
                     )
                 )
-                session.commit()
+            listing = session.get(Listing, listing_id)
+            if listing:
+                session.merge(listing)
+            session.commit()
+
+        return item
+
+
+class ProductMatchingPipeline:
+    AUTO_MATCH_THRESHOLD = 0.7
+
+    def process_item(self, item, spider):
+        adapter = ItemAdapter(item)
+        listing_id = adapter.get("listing_id")
+        if not listing_id:
+            return item
+
+        SessionFactory = get_session_factory()
+        with SessionFactory() as session:
+            listing = session.get(Listing, listing_id)
+            if not listing or listing.product_id:
+                return item
+
+            result = match_listing_to_product(session, listing)
+            if result.product_id and result.confidence >= self.AUTO_MATCH_THRESHOLD:
+                listing.product_id = result.product_id
+                listing.match_confidence = result.confidence
+            else:
+                listing.match_confidence = result.confidence
+            session.commit()
+
         return item
