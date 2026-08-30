@@ -1,0 +1,25 @@
+# Deploy: Render dashboard → New Blueprint → connect this repo.
+# After the database is created, import your local snapshot:
+#   bash scripts/export_db_snapshot.sh
+#   psql "$RENDER_DATABASE_URL" < bagzine_snapshot.sql
+services:
+  - type: web
+    name: bagzine-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements-api-deploy.txt
+    startCommand: uvicorn api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHONPATH
+        value: /opt/render/project/src
+      - key: DATABASE_URL
+        fromDatabase:
+          name: bagzine-db
+          property: connectionString
+
+databases:
+  - name: bagzine-db
+    plan: free
+    databaseName: luxury_bags
+    user: lvbp
