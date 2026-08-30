@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-const REPO = "https://github.com/tl4732-cyber/luxury_vintage_bag_price";
+const REPO = "https://github.com/tl4732-cyber/BAGZINE";
 const BRANCH = "cursor/phase1-scrapy-step-by-step";
 
 function tree(path: string) {
@@ -355,7 +355,7 @@ export function TechRoadmap() {
       <p className="tech-roadmap-repo">
         Full repository:{" "}
         <a href={`${REPO}/tree/${BRANCH}`} target="_blank" rel="noreferrer">
-          github.com/tl4732-cyber/luxury_vintage_bag_price ↗
+          github.com/tl4732-cyber/BAGZINE ↗
         </a>
       </p>
     </div>
