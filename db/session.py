@@ -21,7 +21,12 @@ def get_database_url() -> str:
 
 @lru_cache
 def get_engine():
-    return create_engine(get_database_url(), pool_pre_ping=True)
+    url = get_database_url()
+    connect_args: dict[str, object] = {}
+    # Neon pooler URLs need prepared statements disabled for SQLAlchemy/psycopg2.
+    if "-pooler." in url:
+        connect_args["prepare_threshold"] = None
+    return create_engine(url, pool_pre_ping=True, connect_args=connect_args)
 
 
 def get_session_factory():
