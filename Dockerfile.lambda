@@ -1,0 +1,24 @@
+# Container image for the AWS Lambda scraper (see scrapers/bags/lambda_handler.py).
+#
+# Build & push (after `terraform apply` has created the ECR repo — see infra/terraform):
+#   aws ecr get-login-password --region <region> | docker login --username AWS --password-stdin <account>.dkr.ecr.<region>.amazonaws.com
+#   docker build -f Dockerfile.lambda -t bagzine-scraper .
+#   docker tag bagzine-scraper:latest <account>.dkr.ecr.<region>.amazonaws.com/bagzine-scraper:latest
+#   docker push <account>.dkr.ecr.<region>.amazonaws.com/bagzine-scraper:latest
+#
+# Local smoke test (no AWS needed, S3 archive silently no-ops without a bucket):
+#   docker build -f Dockerfile.lambda -t bagzine-scraper .
+#   docker run --rm bagzine-scraper bags.lambda_handler.handler '{}'
+FROM public.ecr.aws/lambda/python:3.12
+
+# Flattened layout so `bags/settings.py`'s ROOT (two parents up from
+# bags/settings.py) resolves to /var/task, matching the local project's
+# `scrapers/` (contains bags/) next to `db/` at the project root.
+COPY requirements-lambda.txt ${LAMBDA_TASK_ROOT}/requirements-lambda.txt
+RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements-lambda.txt
+
+COPY scrapers/bags ${LAMBDA_TASK_ROOT}/bags
+COPY scrapers/scrapy.cfg ${LAMBDA_TASK_ROOT}/scrapy.cfg
+COPY db ${LAMBDA_TASK_ROOT}/db
+
+CMD ["bags.lambda_handler.handler"]

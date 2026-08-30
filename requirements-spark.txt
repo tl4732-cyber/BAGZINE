@@ -1,0 +1,5 @@
+# Optional -- only needed for scripts/spark_silver_consolidate.py.
+# Not included in requirements-scrapers.txt/requirements-lambda.txt: PySpark
+# pulls in the JVM-based Spark engine (~300MB) that nothing else in this repo
+# needs. Also requires a JVM (Java 17+) on PATH -- see README for setup.
+pyspark>=3.5,<4

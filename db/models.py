@@ -6,6 +6,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Index,
+    JSON,
     Numeric,
     String,
     Text,
@@ -107,6 +108,7 @@ class Listing(Base):
     marketplace_id: Mapped[int] = mapped_column(ForeignKey("marketplaces.id"), nullable=False)
     source_listing_id: Mapped[str] = mapped_column(String(128), nullable=False)
     url: Mapped[str] = mapped_column(Text, nullable=False)
+    image_url: Mapped[str | None] = mapped_column(Text)
     title: Mapped[str | None] = mapped_column(Text)
     condition_raw: Mapped[str | None] = mapped_column(String(128))
     condition_normalized: Mapped[str | None] = mapped_column(String(64))
@@ -115,6 +117,10 @@ class Listing(Base):
         default=ListingStatus.ACTIVE,
     )
     content_hash: Mapped[str | None] = mapped_column(String(64))
+    attributes_raw: Mapped[dict] = mapped_column(JSON, default=dict)
+    match_confidence: Mapped[float | None] = mapped_column(Numeric(4, 3))
+    match_method: Mapped[str | None] = mapped_column(String(32))
+    match_evidence: Mapped[dict] = mapped_column(JSON, default=dict)
     product_variant_id: Mapped[int | None] = mapped_column(ForeignKey("product_variants.id"))
     first_seen_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()

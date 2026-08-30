@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 # Pydantic for defining, validating, and converting data.
@@ -13,12 +13,14 @@ class ListingSchema(BaseModel):
     currency: str = "USD"
     condition_raw: str | None = None
     condition_normalized: str | None = None
+    attributes_raw: dict[str, Any] = Field(default_factory=dict)
+    image_url: str | None = None
     status: Literal["active", "sold", "removed"] = "active"
 
     @field_validator("marketplace") 
     @classmethod 
     def marketplace_allowed(cls, value: str) -> str:
-        allowed = {"ebay", "therealreal"}
+        allowed = {"ebay", "therealreal", "fashionphile"}
         if value not in allowed:
             raise ValueError(f"marketplace must be one of {allowed}")
         return value

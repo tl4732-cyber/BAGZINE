@@ -135,6 +135,19 @@ class EbayApiSpider(scrapy.Spider):
                 errback=self.log_error,  
             )
 
+    def _image_from_summary(self, summary: dict) -> str | None:
+        image = summary.get("image")
+        if isinstance(image, dict):
+            url = image.get("imageUrl")
+            if url:
+                return str(url)
+        thumbs = summary.get("thumbnailImages") or []
+        if thumbs and isinstance(thumbs[0], dict):
+            url = thumbs[0].get("imageUrl")
+            if url:
+                return str(url)
+        return None
+
     def _item_from_summary(self, summary: dict) -> ListingItem: 
         price_block = summary.get("price") or {}
         item = ListingItem()
@@ -145,6 +158,12 @@ class EbayApiSpider(scrapy.Spider):
         item["price_amount"] = float(price_block.get("value", 0))
         item["currency"] = price_block.get("currency", "USD")
         item["condition_raw"] = summary.get("condition")
+        item["image_url"] = self._image_from_summary(summary)
+        item["attributes_raw"] = {
+            str(aspect.get("name")): aspect.get("value")
+            for aspect in (summary.get("localizedAspects") or [])
+            if aspect.get("name") and aspect.get("value") is not None
+        }
         return item
 
     def _mock_items(self): 

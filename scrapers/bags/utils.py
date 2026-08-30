@@ -13,10 +13,18 @@ CONDITION_MAP = {
     "good": "good",
     "fair": "fair",
     "poor": "poor",
-    "pre-owned": "good",
-    "used": "good",
     "like new": "like_new",
 }
+
+CONDITION_PATTERNS = [
+    ("new", ("new with tags", "new with box", "brand new", "giftable")),
+    ("like_new", ("new without tags", "new without box", "like new", "unused")),
+    ("excellent", ("excellent", "pristine")),
+    ("very_good", ("very good",)),
+    ("good", ("pre-owned - good", "preowned - good", "used - good", "good condition")),
+    ("fair", ("fair", "worn", "shows wear")),
+    ("poor", ("poor", "for parts", "flawed")),
+]
 
 
 def utc_now() -> datetime:
@@ -25,15 +33,27 @@ def utc_now() -> datetime:
 
 def normalize_condition(raw: str | None) -> str | None:
     if not raw:
-        return None
-    key = raw.strip().lower()
-    return CONDITION_MAP.get(key, key.replace(" ", "_"))
+        return "unknown"
+    key = " ".join(raw.strip().lower().replace("_", " ").split())
+    if key in CONDITION_MAP:
+        return CONDITION_MAP[key]
+    for normalized, phrases in CONDITION_PATTERNS:
+        if any(phrase in key for phrase in phrases):
+            return normalized
+    return "unknown"
 
 
 def compute_content_hash(fields: dict) -> str:
     payload = {
         k: fields.get(k)
-        for k in ("title", "price_amount", "currency", "condition_normalized", "status")
+        for k in (
+            "title",
+            "price_amount",
+            "currency",
+            "condition_normalized",
+            "status",
+            "attributes_raw",
+        )
     }
     canonical = json.dumps(payload, sort_keys=True, default=str)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

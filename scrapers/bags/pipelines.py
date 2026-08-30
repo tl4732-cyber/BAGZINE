@@ -1,3 +1,5 @@
+import json
+import uuid
 from datetime import datetime, timezone
 
 from itemadapter import ItemAdapter
@@ -5,30 +7,31 @@ from pydantic import ValidationError
 from scrapy.exceptions import DropItem
 from sqlalchemy import select
 
-from bags.product_linking import should_link_listing
+from bags.product_linking import is_suspicious_price, should_drop_listing, should_link_listing
 from bags.product_matching import get_or_create_variant
 from bags.schemas import ListingSchema
-from bags.title_parser import parse_title
+from bags.title_parser import match_product
 from bags.utils import compute_content_hash, normalize_condition, utc_now
 from db.models import Listing, ListingStatus, Marketplace, PriceObservation, PriceType
 from db.session import get_session_factory
 
-# convert scraped timestamps into Python datetime objects
-def _parse_scraped_at(value) -> datetime:
+# This is a helper function to parse the scraped_at field into a datetime object.
+def _parse_scraped_at(value) -> datetime: 
+
     if isinstance(value, datetime):
-        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc) 
     if isinstance(value, str):
         return datetime.fromisoformat(value)
-    return utc_now()
+    return utc_now() 
 
 
-class ValidationPipeline:
+class ValidationPipeline: 
     """Drop items missing required fields or with invalid values."""
     # uses a Pydantic model ListingSchema to validate the item
-
-    def process_item(self, item, spider):
+ 
+    def process_item(self, item, spider): 
         adapter = ItemAdapter(item)
-        try:
+        try: 
             validated = ListingSchema(**adapter.asdict())
             adapter.update(validated.model_dump())
         except ValidationError as exc:
@@ -55,6 +58,78 @@ class NormalizationPipeline:
         return item
 
 
+class JunkListingPipeline:
+    """Drop junk listings (organizers, etc.) before database storage."""
+
+    def process_item(self, item, spider):
+        adapter = ItemAdapter(item)
+        title = adapter.get("title")
+        match = match_product(title, adapter.get("attributes_raw"))
+        if should_drop_listing(title, adapter.get("price_amount"), match.product):
+            spider.logger.info("Dropped listing (no brand/model or junk): %s", title)
+            raise DropItem(f"Unidentifiable or junk listing: {title}")
+        return item
+
+
+class S3RawArchivePipeline:
+    """Land every scraped item in S3 as an immutable raw/bronze-layer object.
+
+    Disabled by default for local dev (no AWS credentials required). Set the
+    ``S3_ARCHIVE_BUCKET`` setting/env var to enable it — see
+    ``bags/settings_lambda.py`` for the AWS Lambda crawl profile, and
+    ``scripts/load_from_s3.py`` for the loader that replays these objects
+    through the rest of the pipeline (junk filtering, product matching,
+    Postgres upsert) from a machine that can reach the database.
+
+    Items are buffered in memory and flushed as a single newline-delimited
+    JSON object per spider run to keep S3 PUT requests (and cost) low.
+    """
+
+    def __init__(self, bucket: str | None, prefix: str):
+        self.bucket = bucket
+        self.prefix = prefix.strip("/")
+        self._buffer: list[dict] = []
+        self._client = None
+
+    @classmethod
+    def from_crawler(cls, crawler):
+        return cls(
+            bucket=crawler.settings.get("S3_ARCHIVE_BUCKET") or None,
+            prefix=crawler.settings.get("S3_ARCHIVE_PREFIX", "raw"),
+        )
+
+    def open_spider(self, spider):
+        if not self.bucket:
+            spider.logger.info("S3 archive disabled (S3_ARCHIVE_BUCKET not set)")
+            return
+        import boto3
+
+        self._client = boto3.client("s3")
+        self._buffer = []
+
+    def process_item(self, item, spider):
+        if self.bucket:
+            self._buffer.append(dict(ItemAdapter(item).asdict()))
+        return item
+
+    def close_spider(self, spider):
+        if not self.bucket or not self._buffer:
+            return
+        now = utc_now()
+        key = (
+            f"{self.prefix}/{spider.name}/{now:%Y/%m/%d}/"
+            f"{spider.name}_{now:%Y%m%dT%H%M%SZ}_{uuid.uuid4().hex[:8]}.jsonl"
+        )
+        body = "\n".join(json.dumps(record, default=str) for record in self._buffer)
+        self._client.put_object(
+            Bucket=self.bucket,
+            Key=key,
+            Body=body.encode("utf-8"),
+            ContentType="application/x-ndjson",
+        )
+        spider.logger.info("Archived %d items to s3://%s/%s", len(self._buffer), self.bucket, key)
+
+
 class ProductLinkPipeline:
     """Parse title into brand/model attributes and resolve a product variant row."""
 
@@ -62,7 +137,19 @@ class ProductLinkPipeline:
         adapter = ItemAdapter(item)
         title = adapter.get("title")
         price_amount = adapter.get("price_amount")
-        parsed = parse_title(title)
+        match = match_product(title, adapter.get("attributes_raw"))
+        parsed = match.product
+
+        adapter["match_confidence"] = match.confidence
+        adapter["match_method"] = match.method
+        evidence = dict(match.evidence)
+        if parsed and is_suspicious_price(parsed, price_amount):
+            evidence["price_anomaly"] = {
+                "value": True,
+                "source": "review_rule",
+                "matched_text": f"ask={price_amount}",
+            }
+        adapter["match_evidence"] = evidence
 
         if not should_link_listing(title, price_amount, parsed):
             adapter["product_variant_id"] = None
@@ -131,11 +218,17 @@ class PostgresListingPipeline:
 
             listing.url = adapter["url"]
             listing.title = adapter.get("title")
+            if adapter.get("image_url"):
+                listing.image_url = adapter.get("image_url")
             listing.condition_raw = adapter.get("condition_raw")
             listing.condition_normalized = adapter.get("condition_normalized")
             listing.status = ListingStatus(adapter.get("status", "active"))
             listing.content_hash = adapter.get("content_hash")
             listing.product_variant_id = adapter.get("product_variant_id")
+            listing.attributes_raw = adapter.get("attributes_raw") or {}
+            listing.match_confidence = adapter.get("match_confidence")
+            listing.match_method = adapter.get("match_method")
+            listing.match_evidence = adapter.get("match_evidence") or {}
             listing.last_seen_at = now
             self.session.flush()
 
