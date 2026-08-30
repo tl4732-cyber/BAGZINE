@@ -57,13 +57,14 @@ scrapy crawl fashionphile -a use_mock=1 -o out.json   # offline test
 scrapy crawl fashionphile -o out.json                 # live crawl
 ```
 
-### Step 4 — validation + normalization
-
-Every spider item is validated (bad prices dropped) and enriched with `condition_normalized`, `scraped_at`, and `content_hash`.
+### Step 5 — The RealReal (Playwright)
 
 ```bash
+pip install -r requirements-scrapers.txt
+playwright install chromium
 cd scrapers
-scrapy crawl dev_sample -o out.json
+scrapy crawl therealreal -a use_mock=1 -o out.json   # offline test
+scrapy crawl therealreal -o out.json                 # live TRR
 ```
 
 ### Step 6 — Postgres (local Docker)
