@@ -24,7 +24,7 @@ if ("scrollRestoration" in window.history) {
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <ScrollToTop />
       <Routes>
         <Route element={<Layout />}>

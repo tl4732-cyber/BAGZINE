@@ -1,6 +1,8 @@
-const DEFAULT_IMAGE = "/images/bag-placeholder.svg";
+import { assetUrl } from "./assets";
 
-const BAG_IMAGE_DIR = "/images/bags";
+const DEFAULT_IMAGE = assetUrl("images/bag-placeholder.svg");
+
+const BAG_IMAGE_DIR = assetUrl("images/bags");
 
 const MODEL_IMAGE_FILES: Record<string, string> = {
   "Celine::Luggage": "Celine Luggage.png",
@@ -55,3 +57,5 @@ export function modelExplorePath(brand: string, model: string): string {
 export function brandSectionId(brand: string): string {
   return `brand-${encodeURIComponent(brand)}`;
 }
+
+export const PLACEHOLDER_IMAGE = DEFAULT_IMAGE;

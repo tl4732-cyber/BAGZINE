@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { TechRoadmap } from "../components/TechRoadmap";
 
 interface Props {
   title: string;
@@ -31,39 +32,17 @@ export function AboutPage() {
 
 export function TechSpecsPage() {
   return (
-    <StaticPage title="Tech Specs">
-      <p>
-        Bagzine is a full-stack price intelligence system: scrape, normalize, store, and publish.
-      </p>
-      <ul>
-        <li>
-          <strong>Collection.</strong> Python Scrapy spiders pull listings from the eBay Browse API
-          and Fashionphile&apos;s public Shopify feed, with validation so accessories and junk
-          prices never enter the catalog.
-        </li>
-        <li>
-          <strong>Matching.</strong> Title parsers canonicalize brand, model, size, leather, and
-          color, then score confidence before a listing is linked to a product variant.
-        </li>
-        <li>
-          <strong>Storage.</strong> PostgreSQL holds listings and append-only price history.
-          Alembic migrations and SQL analytics views power medians, percentiles, and comparable
-          sets.
-        </li>
-        <li>
-          <strong>API.</strong> FastAPI exposes read-only REST endpoints for models, listings, and
-          investigation reports.
-        </li>
-        <li>
-          <strong>Interface.</strong> A React and TypeScript dashboard — catalog, model pages, and
-          listing investigations with price charts.
-        </li>
-        <li>
-          <strong>Cloud.</strong> An optional AWS path runs crawls on a schedule (Lambda, S3,
-          EventBridge), provisioned with Terraform and monitored in CloudWatch.
-        </li>
-      </ul>
-    </StaticPage>
+    <section className="static-page static-page--tech">
+      <h1>TECH SPECS</h1>
+      <div className="static-page-tech-content">
+        <div className="static-page-body">
+          <TechRoadmap />
+        </div>
+        <Link to="/" className="back-link">
+          ← Back to home
+        </Link>
+      </div>
+    </section>
   );
 }
 

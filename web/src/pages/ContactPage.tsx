@@ -1,4 +1,5 @@
 import { type FormEvent, useState } from "react";
+import { assetUrl } from "../lib/assets";
 
 const CONTACT_EMAIL = "tl4732@nyu.edu";
 
@@ -67,7 +68,7 @@ export function ContactPage() {
       <aside className="contact-page-right">
         <div className="contact-page-visual">
           <img
-            src="/images/IMG_088B311DF51F-1-modified.png"
+            src={assetUrl("images/IMG_088B311DF51F-1-modified.png")}
             alt="Portrait illustration of Lucy"
             className="contact-page-portrait"
           />

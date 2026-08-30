@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api, formatMoney } from "../api";
 import { ListingPhoto } from "../components/ListingPhoto";
-import { getModelImage } from "../lib/modelImages";
+import { getModelImage, PLACEHOLDER_IMAGE } from "../lib/modelImages";
 import { scrollPageToTop } from "../lib/scrollToTop";
 import type { FilterOptions, ListingSummary, ModelSummary, SortOption } from "../types";
 
@@ -147,7 +147,7 @@ export function ModelExplorePage() {
               alt={`${brand} ${model}`}
               className="model-explore-photo"
               onError={(e) => {
-                e.currentTarget.src = "/images/bag-placeholder.svg";
+                e.currentTarget.src = PLACEHOLDER_IMAGE;
               }}
             />
           </div>

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import type { ModelSummary } from "../types";
 import { formatMoney } from "../api";
-import { getModelImage, modelExplorePath } from "../lib/modelImages";
+import { getModelImage, modelExplorePath, PLACEHOLDER_IMAGE } from "../lib/modelImages";
 
 interface Props {
   model: ModelSummary;
@@ -20,7 +20,7 @@ export function ModelCard({ model, showBrand = false }: Props) {
           className="catalog-card-photo"
           loading="lazy"
           onError={(e) => {
-            e.currentTarget.src = "/images/bag-placeholder.svg";
+            e.currentTarget.src = PLACEHOLDER_IMAGE;
           }}
         />
       </div>
