@@ -148,6 +148,7 @@ class FashionphileSpider(scrapy.Spider):
         item["price_amount"] = float(price)
         item["currency"] = currency
         item["condition_raw"] = condition
+        item["image_url"] = self._image_from_product(product_data)
         item["attributes_raw"] = {"brand": brand} if brand else {}
         yield item
 
@@ -170,6 +171,16 @@ class FashionphileSpider(scrapy.Spider):
         return response.css(
             ".fp-product__condition-accordion .fp-font-weight--regular::text"
         ).get()
+
+    def _image_from_product(self, product_data: dict) -> str | None:
+        image = product_data.get("image")
+        if isinstance(image, list) and image:
+            return str(image[0])
+        if isinstance(image, str) and image.strip():
+            return image.strip()
+        if isinstance(image, dict):
+            return image.get("url") or image.get("contentUrl")
+        return None
 
     def _mock_items(self):
         mocks = [

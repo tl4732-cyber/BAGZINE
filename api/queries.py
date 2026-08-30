@@ -10,6 +10,7 @@ SELECT
     listing_id,
     title,
     url,
+    image_url,
     brand,
     model,
     size,
@@ -165,12 +166,34 @@ def fetch_filter_options(
         )
         return [row.value for row in rows]
 
-    return {
+    def most_common(column: str) -> str | None:
+        row = session.execute(
+            text(
+                f"""
+                SELECT {column} AS value
+                FROM v_latest_listing_prices
+                WHERE is_linked
+                  AND {column} IS NOT NULL
+                  AND TRIM({column}) <> ''
+                {where}
+                GROUP BY {column}
+                ORDER BY COUNT(*) DESC, {column}
+                LIMIT 1
+                """
+            ),
+            params,
+        ).mappings().first()
+        return row["value"] if row else None
+
+    result = {
         "sizes": distinct("size"),
         "colors": distinct("color"),
         "leathers": distinct("leather"),
         "conditions": distinct("condition_normalized"),
+        "most_common_color": most_common("color") if brand and model else None,
+        "most_common_leather": most_common("leather") if brand and model else None,
     }
+    return result
 
 
 def fetch_last_scrape_at(session: Session):
@@ -394,7 +417,7 @@ def fetch_investigation(session: Session, listing_id: int) -> dict | None:
         percent_text = f"{abs(float(delta_percent)):.1f}%" if delta_percent is not None else "0%"
         explanation = (
             f"Compared with {stats['sample_size']} active {target['model']} listings "
-            f"matched on {scope}. This ask is {percent_text} {direction} the median asking price."
+            f"matched on {scope}. This listing is {percent_text} {direction} the median asking price."
         )
         return {
             "status": "ready",

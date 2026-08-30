@@ -14,6 +14,7 @@ class ListingSchema(BaseModel):
     condition_raw: str | None = None
     condition_normalized: str | None = None
     attributes_raw: dict[str, Any] = Field(default_factory=dict)
+    image_url: str | None = None
     status: Literal["active", "sold", "removed"] = "active"
 
     @field_validator("marketplace") 

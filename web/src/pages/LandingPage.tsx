@@ -1,39 +1,42 @@
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 const TYPED_SEGMENTS = [
-  { text: "BAGZINE", emphasis: true },
-  { text: " isn't here to sell you a bag, but to help you find your " },
-  { text: "perfect one", emphasis: true },
-  { text: " with the most " },
-  { text: "complete price breakdown", emphasis: true },
-  { text: " and a " },
-  { text: "curated list", emphasis: true },
-  { text: " of where to buy it." },
+  { text: "Your place to discover, compare, and talk bags." },
 ];
 
 const TYPED_LENGTH = TYPED_SEGMENTS.reduce((total, segment) => total + segment.text.length, 0);
 
 const BRANDS = [
+  "Bottega Veneta",
   "Celine",
   "Chanel",
   "Dior",
+  "Fendi",
+  "Goyard",
+  "Gucci",
   "Hermès",
+  "Loewe",
   "Louis Vuitton",
   "Prada",
   "Saint Laurent",
 ];
 
+const MARQUEE_SPEED_PX_PER_SEC = 45;
+
 export function LandingPage() {
   const [statementStage, setStatementStage] = useState(0);
   const [typedCharacters, setTypedCharacters] = useState(0);
   const [typingFinished, setTypingFinished] = useState(false);
+  const brandGroupRef = useRef<HTMLDivElement>(null);
+  const [marqueeCopies, setMarqueeCopies] = useState(4);
+  const [marqueeShift, setMarqueeShift] = useState(0);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (reducedMotion) {
-      setStatementStage(4);
+      setStatementStage(3);
       setTypedCharacters(TYPED_LENGTH);
       setTypingFinished(true);
       return;
@@ -41,10 +44,9 @@ export function LandingPage() {
 
     let typingTimer: number | undefined;
     const timers = [
-      window.setTimeout(() => setStatementStage(1), 1950),
-      window.setTimeout(() => setStatementStage(2), 3050),
-      window.setTimeout(() => setStatementStage(3), 4200),
-      window.setTimeout(() => setStatementStage(4), 5250),
+      window.setTimeout(() => setStatementStage(1), 1200),
+      window.setTimeout(() => setStatementStage(2), 1550),
+      window.setTimeout(() => setStatementStage(3), 1900),
     ];
 
     timers.push(window.setTimeout(() => {
@@ -59,12 +61,33 @@ export function LandingPage() {
           return next;
         });
       }, 42);
-    }, 6150));
+    }, 2350));
 
     return () => {
       timers.forEach((timer) => window.clearTimeout(timer));
       if (typingTimer) window.clearInterval(typingTimer);
     };
+  }, []);
+
+  useLayoutEffect(() => {
+    const group = brandGroupRef.current;
+    const container = group?.parentElement?.parentElement;
+    if (!group || !container) return;
+
+    const measure = () => {
+      const groupWidth = group.getBoundingClientRect().width;
+      const containerWidth = container.getBoundingClientRect().width;
+      if (groupWidth <= 0) return;
+      setMarqueeCopies(Math.max(2, Math.ceil(containerWidth / groupWidth) + 1));
+      setMarqueeShift(groupWidth);
+    };
+
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(group);
+    observer.observe(container);
+    void document.fonts?.ready.then(measure);
+    return () => observer.disconnect();
   }, []);
 
   function renderTypedCopy() {
@@ -85,10 +108,6 @@ export function LandingPage() {
       <div className="landing-decoration" aria-hidden>
         <span className="landing-frame landing-frame--one" />
         <span className="landing-frame landing-frame--two" />
-        <span className="landing-guide landing-guide--horizontal" />
-        <span className="landing-guide landing-guide--vertical" />
-        <span className="landing-edition landing-edition--top">Price archive / 001</span>
-        <span className="landing-edition landing-edition--bottom">Est. 2026</span>
       </div>
 
       <div className="landing-name" aria-label="Bagzine">
@@ -98,16 +117,9 @@ export function LandingPage() {
 
       <div className="landing-copy" aria-live="polite">
         <p className="landing-statements">
-          <span className={statementStage >= 1 ? "is-visible" : ""}>Not a reseller.</span>
-          <span className={statementStage >= 2 ? "is-visible" : ""}>Not a marketplace.</span>
-        </p>
-        <p className={`landing-investigation${statementStage >= 3 ? " is-visible" : ""}`}>
-          Just the detective
-        </p>
-        <p
-          className={`landing-investigation-sub${statementStage >= 4 ? " is-visible" : ""}`}
-        >
-          for your next bag investigation.
+          <span className={statementStage >= 1 ? "is-visible" : ""}>Bags.</span>
+          <span className={statementStage >= 2 ? "is-visible" : ""}>Prices.</span>
+          <span className={statementStage >= 3 ? "is-visible" : ""}>Opinions.</span>
         </p>
         <p className="landing-intro">
           {renderTypedCopy()}
@@ -121,13 +133,27 @@ export function LandingPage() {
         </Link>
 
         <div className="landing-brand-marquee">
-          <nav className="landing-brand-track" aria-label="Explore prices by brand">
-            {[0, 1].map((group) => (
-              <div className="landing-brand-group" key={group} aria-hidden={group === 1}>
+          <nav
+            className="landing-brand-track"
+            aria-label="Explore prices by brand"
+            style={{
+              ["--marquee-shift" as string]: `${marqueeShift}px`,
+              ["--marquee-duration" as string]: `${
+                marqueeShift > 0 ? marqueeShift / MARQUEE_SPEED_PX_PER_SEC : 28
+              }s`,
+            }}
+          >
+            {Array.from({ length: marqueeCopies }, (_, group) => (
+              <div
+                className="landing-brand-group"
+                key={group}
+                ref={group === 0 ? brandGroupRef : undefined}
+                aria-hidden={group > 0}
+              >
                 {BRANDS.map((brand) => (
                   <Link
                     key={`${group}-${brand}`}
-                    tabIndex={group === 1 ? -1 : undefined}
+                    tabIndex={group > 0 ? -1 : undefined}
                     to={`/prices?brand=${encodeURIComponent(brand)}`}
                   >
                     {brand}

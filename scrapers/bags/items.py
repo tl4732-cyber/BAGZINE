@@ -22,3 +22,4 @@ class ListingItem(scrapy.Item):
     match_evidence = scrapy.Field()
     listing_id = scrapy.Field()  # set by PostgresListingPipeline
     _is_new_listing = scrapy.Field()  # set by PostgresListingPipeline
+    image_url = scrapy.Field()

@@ -21,6 +21,8 @@ export function BrowsePage() {
     colors: [],
     leathers: [],
     conditions: [],
+    most_common_color: null,
+    most_common_leather: null,
   });
   const [items, setItems] = useState<ListingSummary[]>([]);
   const [total, setTotal] = useState(0);
@@ -47,7 +49,16 @@ export function BrowsePage() {
     api
       .getFilters({ brand: brand || undefined, model: model || undefined })
       .then(setFilters)
-      .catch(() => setFilters({ sizes: [], colors: [], leathers: [], conditions: [] }));
+      .catch(() =>
+        setFilters({
+          sizes: [],
+          colors: [],
+          leathers: [],
+          conditions: [],
+          most_common_color: null,
+          most_common_leather: null,
+        }),
+      );
   }, [brand, model]);
 
   useEffect(() => {

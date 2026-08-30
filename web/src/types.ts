@@ -13,6 +13,7 @@ export interface ListingSummary {
   listing_id: number;
   title: string | null;
   url: string;
+  image_url: string | null;
   brand: string | null;
   model: string | null;
   size: string | null;
@@ -83,6 +84,8 @@ export interface FilterOptions {
   colors: string[];
   leathers: string[];
   conditions: string[];
+  most_common_color: string | null;
+  most_common_leather: string | null;
 }
 
 export interface MetaResponse {

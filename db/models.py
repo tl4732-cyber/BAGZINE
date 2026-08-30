@@ -108,6 +108,7 @@ class Listing(Base):
     marketplace_id: Mapped[int] = mapped_column(ForeignKey("marketplaces.id"), nullable=False)
     source_listing_id: Mapped[str] = mapped_column(String(128), nullable=False)
     url: Mapped[str] = mapped_column(Text, nullable=False)
+    image_url: Mapped[str | None] = mapped_column(Text)
     title: Mapped[str | None] = mapped_column(Text)
     condition_raw: Mapped[str | None] = mapped_column(String(128))
     condition_normalized: Mapped[str | None] = mapped_column(String(64))

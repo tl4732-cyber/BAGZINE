@@ -1,22 +1,57 @@
 const DEFAULT_IMAGE = "/images/bag-placeholder.svg";
 
-const MODEL_IMAGES: Record<string, string> = {
-  "Hermès::Birkin":
-    "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=480&h=480&fit=crop&q=80",
-  "Hermès::Kelly":
-    "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=480&h=480&fit=crop&q=80",
-  "Hermès::Vinyl Kelly":
-    "https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?w=480&h=480&fit=crop&q=80",
-  "Chanel::Classic Flap":
-    "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=480&h=480&fit=crop&q=80",
-  "Chanel::Classic Double Flap":
-    "https://images.unsplash.com/photo-1591567180030-f7f1a4a8b8e2?w=480&h=480&fit=crop&q=80",
+const BAG_IMAGE_DIR = "/images/bags";
+
+const MODEL_IMAGE_FILES: Record<string, string> = {
+  "Celine::Luggage": "Celine Luggage.png",
+  "Chanel::Boy Bag": "Chanel boy.png",
+  "Chanel::Classic Flap": "Chanel classic flap.png",
+  "Chanel::Classic Double Flap": "Chanel Classic Double Flap.png",
+  "Dior::Lady Dior": "Dior Lady Dior.png",
+  "Dior::Saddle": "Dior Saddle.png",
+  "Fendi::Baguette": "Fendi Baguette .avif",
+  "Fendi::Peekaboo": "Fendi Peekaboo.avif",
+  "Gucci::Dionysus": "Gucci Dionysus.png",
+  "Gucci::Marmont": "Gucci Marmont.avif",
+  "Hermès::Birkin": "Hermès Birkin.png",
+  "Hermès::Kelly": "Hermes Kelly.png",
+  "Hermès::Constance": "Hermes Constance.png",
+  "Hermès::Haut à Courroies": "Hermès Haut à Courroies.png",
+  "Hermès::Vinyl Kelly": "Hermès Vinyl Kelly.png",
+  "Hermès::Picotin": "Hermès Picotin.png",
+  "Hermès::Evelyne": "Hermès Evelyne.png",
+  "Hermès::Lindy": "Hermès Lindy.png",
+  "Louis Vuitton::Alma": "Louis Vuitton Alma.png",
+  "Louis Vuitton::Neverfull": "Louis Vuitton Neverfull.png",
+  "Louis Vuitton::Pochette Métis": "Louis Vuitton Pochette Métis.png",
+  "Louis Vuitton::Speedy": "Louis Vuitton Speedy.avif",
+  "Prada::Galleria": "Prada Galleria.avif",
+  "Saint Laurent::Loulou": "Saint Laurent Loulou.png",
 };
 
+function modelKey(brand: string, model: string) {
+  return `${brand}::${model}`;
+}
+
 export function getModelImage(brand: string, model: string): string {
-  return MODEL_IMAGES[`${brand}::${model}`] ?? DEFAULT_IMAGE;
+  const file = MODEL_IMAGE_FILES[modelKey(brand, model)];
+  if (!file) {
+    return DEFAULT_IMAGE;
+  }
+  return `${BAG_IMAGE_DIR}/${encodeURIComponent(file)}`;
+}
+
+/** Per-model scale tweaks when source art has extra padding or odd framing. */
+const MODEL_IMAGE_SCALE: Record<string, number> = {};
+
+export function getModelImageScale(brand: string, model: string): number {
+  return MODEL_IMAGE_SCALE[modelKey(brand, model)] ?? 1;
 }
 
 export function modelExplorePath(brand: string, model: string): string {
   return `/explore/${encodeURIComponent(brand)}/${encodeURIComponent(model)}`;
+}
+
+export function brandSectionId(brand: string): string {
+  return `brand-${encodeURIComponent(brand)}`;
 }

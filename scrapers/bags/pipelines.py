@@ -218,6 +218,8 @@ class PostgresListingPipeline:
 
             listing.url = adapter["url"]
             listing.title = adapter.get("title")
+            if adapter.get("image_url"):
+                listing.image_url = adapter.get("image_url")
             listing.condition_raw = adapter.get("condition_raw")
             listing.condition_normalized = adapter.get("condition_normalized")
             listing.status = ListingStatus(adapter.get("status", "active"))

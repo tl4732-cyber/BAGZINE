@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { api, formatMoney } from "../api";
+import { ListingPhoto } from "../components/ListingPhoto";
 import { getModelImage } from "../lib/modelImages";
+import { scrollPageToTop } from "../lib/scrollToTop";
 import type { FilterOptions, ListingSummary, ModelSummary, SortOption } from "../types";
 
 const PAGE_SIZE = 50;
@@ -25,6 +27,8 @@ export function ModelExplorePage() {
     colors: [],
     leathers: [],
     conditions: [],
+    most_common_color: null,
+    most_common_leather: null,
   });
   const [items, setItems] = useState<ListingSummary[]>([]);
   const [total, setTotal] = useState(0);
@@ -32,6 +36,27 @@ export function ModelExplorePage() {
   const [loading, setLoading] = useState(true);
 
   const offset = (page - 1) * PAGE_SIZE;
+  const pendingScrollRef = useRef(true);
+
+  useLayoutEffect(() => {
+    pendingScrollRef.current = true;
+    if (window.location.hash) {
+      const url = `${window.location.pathname}${window.location.search}`;
+      window.history.replaceState(window.history.state, "", url);
+    }
+    scrollPageToTop();
+  }, [brand, model]);
+
+  useEffect(() => {
+    scrollPageToTop();
+  }, [brand, model]);
+
+  useEffect(() => {
+    if (!loading && pendingScrollRef.current) {
+      scrollPageToTop();
+      pendingScrollRef.current = false;
+    }
+  }, [loading, brand, model]);
 
   useEffect(() => {
     api
@@ -47,7 +72,16 @@ export function ModelExplorePage() {
     api
       .getFilters({ brand, model })
       .then(setFilters)
-      .catch(() => setFilters({ sizes: [], colors: [], leathers: [], conditions: [] }));
+      .catch(() =>
+        setFilters({
+          sizes: [],
+          colors: [],
+          leathers: [],
+          conditions: [],
+          most_common_color: null,
+          most_common_leather: null,
+        }),
+      );
   }, [brand, model]);
 
   useEffect(() => {
@@ -86,12 +120,14 @@ export function ModelExplorePage() {
   const currency = modelStats?.currency ?? "USD";
   const imageSrc = getModelImage(brand, model);
 
+  const listingCount = modelStats?.listing_count ?? total;
+
   if (!brand || !model) {
     return (
       <section>
         <p className="error-text">Model not found.</p>
         <Link to="/prices" className="back-link">
-          ← Back to prices
+          ← Back to brands
         </Link>
       </section>
     );
@@ -99,51 +135,66 @@ export function ModelExplorePage() {
 
   return (
     <section className="model-explore">
-      <Link to="/prices" className="back-link">
-        ← Back to prices
+      <Link to="/prices" className="back-link model-explore-back">
+        ← Back to brands
       </Link>
 
-      <header className="model-explore-hero">
-        <div className="model-explore-image">
-          <img
-            src={imageSrc}
-            alt={`${brand} ${model}`}
-            className="model-explore-photo"
-            onError={(e) => {
-              e.currentTarget.src = "/images/bag-placeholder.svg";
-            }}
-          />
-        </div>
+      <div className="model-explore-dashboard">
+        <header className="model-explore-hero">
+          <div className="model-explore-image">
+            <img
+              src={imageSrc}
+              alt={`${brand} ${model}`}
+              className="model-explore-photo"
+              onError={(e) => {
+                e.currentTarget.src = "/images/bag-placeholder.svg";
+              }}
+            />
+          </div>
 
-        <div className="model-explore-info">
-          <p className="model-explore-brand">{brand}</p>
-          <h1 className="model-explore-title">{model}</h1>
-          <p className="model-explore-price">{formatMoney(modelStats?.avg_price, currency)}</p>
-          <p className="model-explore-description">
-            Average resale ask price across {modelStats?.listing_count ?? total} tracked eBay
-            listings for the {brand} {model}.
-          </p>
+          <div className="model-explore-info">
+            <p className="model-explore-brand">{brand}</p>
+            <h1 className="model-explore-title">{model}</h1>
+            <p className="model-explore-price">{formatMoney(modelStats?.avg_price, currency)}</p>
+            <p className="model-explore-description">
+              Average resell price across {listingCount} listings.
+            </p>
 
-          <dl className="model-explore-stats">
-            <div>
-              <dt>Min</dt>
-              <dd>{formatMoney(modelStats?.min_price, currency)}</dd>
-            </div>
-            <div>
-              <dt>Max</dt>
-              <dd>{formatMoney(modelStats?.max_price, currency)}</dd>
-            </div>
-            <div>
-              <dt>Listings</dt>
-              <dd>{modelStats?.listing_count ?? total}</dd>
-            </div>
-          </dl>
+            <dl className="model-explore-stats">
+              <div className="model-explore-stat">
+                <dt>Min price</dt>
+                <dd>{formatMoney(modelStats?.min_price, currency)}</dd>
+              </div>
+              <div className="model-explore-stat">
+                <dt>Max price</dt>
+                <dd>{formatMoney(modelStats?.max_price, currency)}</dd>
+              </div>
+              <div className="model-explore-stat">
+                <dt>Listings</dt>
+                <dd>{listingCount}</dd>
+              </div>
+              <div className="model-explore-stat">
+                <dt>Most common color</dt>
+                <dd>{filters.most_common_color ?? "—"}</dd>
+              </div>
+              <div className="model-explore-stat">
+                <dt>Most common leather</dt>
+                <dd>{filters.most_common_leather ?? "—"}</dd>
+              </div>
+            </dl>
 
-          <a href="#listings" className="model-explore-cta">
-            View all listings
-          </a>
-        </div>
-      </header>
+            <button
+              type="button"
+              className="model-explore-cta"
+              onClick={() => {
+                document.getElementById("listings")?.scrollIntoView({ behavior: "smooth" });
+              }}
+            >
+              View all listings
+            </button>
+          </div>
+        </header>
+      </div>
 
       <div id="listings" className="listings-panel">
         <div className="listings-panel-head">
@@ -221,14 +272,9 @@ export function ModelExplorePage() {
               return (
                 <article key={item.listing_id} className="listing-card">
                   <div className="listing-card-image">
-                    <img
-                      src={imageSrc}
+                    <ListingPhoto
+                      imageUrl={item.image_url}
                       alt={item.title ?? `${brand} ${model}`}
-                      className="listing-card-photo"
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.src = "/images/bag-placeholder.svg";
-                      }}
                     />
                   </div>
                   <div className="listing-card-body">

@@ -24,6 +24,7 @@ class ListingSummary(BaseModel):
     listing_id: int
     title: str | None = None
     url: str
+    image_url: str | None = None
     brand: str | None = None
     model: str | None = None
     size: str | None = None
@@ -104,6 +105,8 @@ class FilterOptions(BaseModel):
     colors: list[str]
     leathers: list[str]
     conditions: list[str]
+    most_common_color: str | None = None
+    most_common_leather: str | None = None
 
 
 class MetaResponse(BaseModel):
