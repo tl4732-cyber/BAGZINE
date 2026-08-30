@@ -4,6 +4,7 @@ import {
   getModelImage,
   getModelImageScale,
   modelExplorePath,
+  PLACEHOLDER_IMAGE,
 } from "../lib/modelImages";
 
 interface Props {
@@ -30,7 +31,7 @@ export function CatalogModelTile({ model }: Props) {
               : undefined
           }
           onError={(e) => {
-            e.currentTarget.src = "/images/bag-placeholder.svg";
+            e.currentTarget.src = PLACEHOLDER_IMAGE;
           }}
         />
       </div>

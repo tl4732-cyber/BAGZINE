@@ -98,7 +98,7 @@ export function LandingPage() {
       remaining -= segment.text.length;
       if (!visibleText) return null;
 
-      const content = segment.emphasis ? <strong>{visibleText}</strong> : visibleText;
+      const content = visibleText;
       return <Fragment key={`${segment.text}-${index}`}>{content}</Fragment>;
     });
   }
