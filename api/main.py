@@ -43,15 +43,28 @@ def root() -> dict[str, str]:
 def health(db: Session = Depends(get_db)) -> HealthResponse:
     try:
         db.execute(text("SELECT 1"))
-        return HealthResponse(status="ok", database="ok")
-    except Exception:
-        return HealthResponse(status="degraded", database="error")
+        database = "ok"
+    except Exception as exc:
+        return HealthResponse(status="degraded", database=f"error: {exc}")
+
+    try:
+        count = db.execute(text("SELECT COUNT(*) FROM v_model_price_stats")).scalar()
+        model_stats = f"ok ({count})"
+    except Exception as exc:
+        model_stats = f"error: {exc}"
+        return HealthResponse(status="degraded", database=database, model_stats=model_stats)
+
+    return HealthResponse(status="ok", database=database, model_stats=model_stats)
 
 
 @app.get("/models", response_model=list[ModelSummary], tags=["models"])
 def list_models(db: Session = Depends(get_db)) -> list[ModelSummary]:
     """All tracked models with listing count and min/avg/max price."""
-    return [ModelSummary(**row) for row in queries.fetch_models(db)]
+    try:
+        rows = queries.fetch_models(db)
+        return [ModelSummary(**row) for row in rows]
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @app.get("/stats", response_model=ModelStats, tags=["stats"])

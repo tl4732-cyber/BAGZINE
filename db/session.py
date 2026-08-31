@@ -3,6 +3,7 @@ from functools import lru_cache
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 
 def get_database_url() -> str:
@@ -22,11 +23,15 @@ def get_database_url() -> str:
 @lru_cache
 def get_engine():
     url = get_database_url()
-    connect_args: dict[str, object] = {}
+    connect_args: dict[str, object] = {"sslmode": "require"}
+    pool_kwargs: dict[str, object] = {"pool_pre_ping": True}
+
     # Neon pooler URLs need prepared statements disabled for SQLAlchemy/psycopg2.
-    if "-pooler." in url:
+    if "-pooler." in url or "neon.tech" in url:
         connect_args["prepare_threshold"] = None
-    return create_engine(url, pool_pre_ping=True, connect_args=connect_args)
+        pool_kwargs["poolclass"] = NullPool
+
+    return create_engine(url, connect_args=connect_args, **pool_kwargs)
 
 
 def get_session_factory():

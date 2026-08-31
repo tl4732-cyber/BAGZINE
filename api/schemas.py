@@ -96,6 +96,7 @@ class DailyActivity(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     database: str
+    model_stats: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
