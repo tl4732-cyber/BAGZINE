@@ -1,89 +1,76 @@
-# Luxury Vintage Bag Price Platform
+# BAGZINE
 
-Track luxury vintage handbag prices from **eBay** and **The RealReal**, store historical price data in PostgreSQL, and explore trends via a Next.js dashboard.
+**Live site:** [https://tl4732-cyber.github.io/BAGZINE/](https://tl4732-cyber.github.io/BAGZINE/)
 
-## Architecture
+BAGZINE is a luxury vintage handbag price explorer. Browse bags by brand, compare asking prices across marketplaces, and see where a listing sits relative to similar bags on the market.
 
-```
-scrapers/ (Scrapy) → PostgreSQL → analytics SQL views → FastAPI → Next.js
-```
+The goal is simple: make secondhand bag shopping less like detective work. No sales pitch — just a clearer picture of what bags are actually going for.
 
-See the architecture plan in `.cursor/plans/` for full design details.
+---
 
-## Quick start
+## What it does
 
-### Prerequisites
+- **Explore** — browse tracked brands and models (Hermès, Chanel, Louis Vuitton, and more)
+- **Compare** — see listings, filters, and price context for a specific bag
+- **Investigate** — open a listing to see how its ask compares to similar bags (median, percentile, comparables)
 
-- Docker Desktop
-- Python 3.11+
-- Node.js 18+ (for dashboard)
+Data currently comes from **eBay** and **Fashionphile**, with more sources planned over time.
 
-### Setup
+---
+
+## How this was built
+
+This started as a personal project combining two things I care about: handbags and learning to build with data.
+
+The process, in plain terms:
+
+1. **Collect** — scrapers pull listing data from marketplaces on a schedule
+2. **Store** — listings and price history live in a PostgreSQL database
+3. **Organize** — titles are parsed and matched to brands, models, size, color, and leather
+4. **Analyze** — SQL views summarize prices, trends, and comparables
+5. **Serve** — a read-only API exposes that data to the website
+6. **Show** — a React frontend turns it into something you can actually browse
+
+Along the way I learned how the pieces fit together: from raw web data → cleaned records → database → API → live site. The in-app **Tech Specs** page walks through each step in more detail.
+
+---
+
+## Tools & stack
+
+| Layer | What we use |
+|-------|-------------|
+| **Frontend** | React, TypeScript, Vite, React Router |
+| **Charts** | Recharts |
+| **API** | Python, FastAPI |
+| **Database** | PostgreSQL |
+| **Scraping** | Scrapy |
+| **Migrations** | Alembic, SQLAlchemy |
+| **Local dev** | Docker |
+| **Hosting (free)** | GitHub Pages (site), Render (API), Neon (database) |
+
+---
+
+## Running locally
+
+If you want to run the project on your machine:
 
 ```bash
 cp .env.example .env
-make setup
+docker compose up -d
+make setup          # or: bash scripts/setup_db.sh
+bash scripts/run_api.sh
+cd web && npm install && npm run dev
 ```
 
-### Run scrapers
+- Site: [http://localhost:5173](http://localhost:5173)
+- API docs: [http://localhost:8000/docs](http://localhost:8000/docs)
 
-```bash
-make scrapers
-# Or individually:
-cd scrapers && PYTHONPATH=.:.. scrapy crawl ebay_api
-cd scrapers && PYTHONPATH=.:.. scrapy crawl therealreal
-```
+For deployment notes, see [`docs/FREE_DEPLOY.md`](docs/FREE_DEPLOY.md).
 
-eBay spider uses **Browse API** when `EBAY_CLIENT_ID` / `EBAY_CLIENT_SECRET` are set; otherwise it yields mock items for local dev.
+---
 
-### API
+## Status
 
-```bash
-make api
-# http://localhost:8000/docs
-```
+BAGZINE is live and evolving. Prices reflect active marketplace **asking** prices, not completed sales. The dataset grows as scrapers run and new listings are added.
 
-### Dashboard
-
-```bash
-cp web/.env.local.example web/.env.local
-make web
-# http://localhost:3000
-```
-
-## Project layout
-
-| Path | Purpose |
-|------|---------|
-| `scrapers/bags/` | Scrapy spiders, items, pipelines |
-| `db/` | SQLAlchemy models, Alembic migrations, seed |
-| `analytics/views/` | SQL views for trends and metrics |
-| `api/` | FastAPI read endpoints |
-| `web/` | Next.js dashboard |
-| `sentiment/` | Phase 4 Reddit / Instagram ingest |
-
-## API endpoints
-
-- `GET /api/v1/search?q=chanel`
-- `GET /api/v1/products/{id}/metrics`
-- `GET /api/v1/products/{id}/prices?range=90d`
-- `GET /api/v1/products/{id}/marketplaces`
-- `GET /api/v1/facets`
-
-## Tests
-
-```bash
-source .venv/bin/activate
-PYTHONPATH=scrapers:. pytest scrapers/tests -v
-```
-
-## Cron example
-
-```cron
-0 */6 * * * /path/to/luxury_vintage_bag_price/scripts/run_scrapers.sh
-0 2 * * * cd /path/to/project && .venv/bin/python -m sentiment.ingest_reddit --limit 100
-```
-
-## Reference
-
-Scraper structure follows [Scrapy_practice](../Scrapy_practice): explicit items, pipeline lifecycle, conservative throttling, and spider unit tests.
+Built by [tl4732-cyber](https://github.com/tl4732-cyber).
